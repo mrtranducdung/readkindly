@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>✨ Lumi Story Player</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --purple: #8b5cf6;
+  --pink:   #ec4899;
+  --blue:   #3b82f6;
+  --green:  #10b981;
+  --orange: #f97316;
+  --yellow: #fbbf24;
+  --red:    #ef4444;
+  --bg:     #0d0a1f;
+  --card:   rgba(255,255,255,0.06);
+  --border: rgba(255,255,255,0.1);
+}
+
+body {
+  font-family: 'Nunito', system-ui, sans-serif;
+  background: var(--bg);
+  color: #fff;
+  min-height: 100vh;
+  display: flex;
+  overflow: hidden;
+}
+
+/* ── Animated background blobs ── */
+.bg-blobs {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+}
+.blob {
+  position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.25;
+  animation: drift 12s ease-in-out infinite alternate;
+}
+.blob-1 { width: 500px; height: 500px; background: var(--purple); top: -100px; left: -100px; animation-delay: 0s; }
+.blob-2 { width: 400px; height: 400px; background: var(--pink);   top: 40%;   right: -80px;  animation-delay: -4s; }
+.blob-3 { width: 350px; height: 350px; background: var(--blue);   bottom: -80px; left: 30%;  animation-delay: -8s; }
+@keyframes drift {
+  from { transform: translate(0,0) scale(1); }
+  to   { transform: translate(30px,20px) scale(1.1); }
+}
+
+/* ── Library sidebar ── */
+#library {
+  width: 270px; min-width: 270px; height: 100vh;
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(20px);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  padding: 20px 16px; z-index: 10; overflow-y: auto;
+  gap: 12px;
+}
+#library-header {
+  font-size: 1.25rem; font-weight: 900;
+  background: linear-gradient(135deg, #a78bfa, #f472b6);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+#story-list { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+
+.story-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 14px; padding: 12px 14px; cursor: pointer;
+  transition: all 0.2s ease;
+}
+.story-card:hover { background: rgba(139,92,246,0.2); border-color: var(--purple); transform: translateX(3px); }
+.story-card.active { background: rgba(139,92,246,0.3); border-color: var(--purple); box-shadow: 0 0 14px rgba(139,92,246,0.3); }
+.story-card .sc-title { font-weight: 800; font-size: 0.88rem; line-height: 1.3; }
+.story-card .sc-meta  { font-size: 0.72rem; opacity: 0.5; margin-top: 3px; }
+.sc-delete { float: right; background: none; border: none; color: rgba(255,255,255,0.3); cursor: pointer; font-size: 0.9rem; padding: 0 0 0 6px; }
+.sc-delete:hover { color: var(--red); }
+
+.empty-lib { text-align: center; opacity: 0.35; padding: 30px 10px; font-size: 0.85rem; line-height: 1.6; }
+
+#add-story-btn {
+  padding: 12px; border: none; border-radius: 14px; cursor: pointer;
+  background: linear-gradient(135deg, var(--purple), var(--pink));
+  color: #fff; font-family: inherit; font-weight: 800; font-size: 1rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+#add-story-btn:hover { transform: scale(1.03); box-shadow: 0 0 24px rgba(139,92,246,0.5); }
+
+/* ── Main player ── */
+#player {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  padding: 16px 24px; z-index: 10; overflow-y: auto;
+}
+
+#empty-state {
+  text-align: center;
+}
+#empty-state .es-emoji { font-size: 5rem; display: block; margin-bottom: 16px; }
+#empty-state h2 { font-size: 1.6rem; font-weight: 900; margin-bottom: 8px; }
+#empty-state p { opacity: 0.5; margin-bottom: 24px; }
+.btn-primary {
+  padding: 13px 28px; border: none; border-radius: 14px; cursor: pointer;
+  background: linear-gradient(135deg, var(--purple), var(--pink));
+  color: #fff; font-family: inherit; font-weight: 800; font-size: 1rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.btn-primary:hover { transform: scale(1.04); box-shadow: 0 0 24px rgba(139,92,246,0.5); }
+
+#player-wrap {
+  display: flex; gap: 28px; align-items: flex-start;
+  max-width: 920px; width: 100%;
+}
+
+/* ── Scene image panel ── */
+#scene-panel {
+  position: relative; width: 310px; min-width: 310px;
+  aspect-ratio: 9/16; border-radius: 22px; overflow: hidden;
+  box-shadow: 0 0 60px rgba(139,92,246,0.35), 0 24px 60px rgba(0,0,0,0.6);
+  background: #1a1030;
+}
+#scene-img {
+  width: 100%; height: 100%; object-fit: cover;
+  transition: opacity 0.4s ease;
+}
+/* Live SRT subtitle at bottom */
+#live-subtitle {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  padding: 60px 14px 20px;
+  background: linear-gradient(transparent, rgba(0,0,0,0.85));
+  text-align: center; transition: opacity 0.3s;
+}
+#live-subtitle-text {
+  font-size: 1rem; font-weight: 800; color: #fff;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.9);
+  line-height: 1.4; cursor: pointer; border-radius: 6px;
+  padding: 2px 6px; transition: background 0.2s;
+  display: inline-block;
+}
+#live-subtitle-text:hover { background: rgba(255,255,255,0.15); }
+#live-subtitle-text.replay-flash { animation: flash 0.3s ease; }
+@keyframes flash { 0%,100% { background: transparent; } 50% { background: rgba(251,191,36,0.4); } }
+
+/* On-screen caption at top */
+#on-screen-cap {
+  position: absolute; top: 0; left: 0; right: 0;
+  padding: 20px 12px 10px;
+  background: linear-gradient(rgba(0,0,0,0.6), transparent);
+  text-align: center;
+}
+#on-screen-cap-text {
+  font-size: 0.88rem; font-weight: 900; color: var(--yellow);
+  text-shadow: 0 2px 6px rgba(0,0,0,0.8); letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* Scene badge */
+#scene-badge {
+  position: absolute; top: 12px; right: 12px;
+  background: rgba(0,0,0,0.55); backdrop-filter: blur(6px);
+  border-radius: 20px; padding: 3px 10px;
+  font-size: 0.7rem; font-weight: 700; opacity: 0.85;
+}
+
+/* Progress dots */
+#prog-dots {
+  position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 5px; align-items: center;
+}
+.pdot {
+  height: 6px; border-radius: 3px; background: rgba(255,255,255,0.35);
+  transition: all 0.3s ease; cursor: pointer;
+  width: 6px;
+}
+.pdot.active { width: 18px; background: #fff; }
+.pdot.done  { background: rgba(255,255,255,0.65); }
+
+/* ── Right panel ── */
+#right-panel { flex: 1; display: flex; flex-direction: column; gap: 14px; }
+
+/* Card base */
+.panel-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 18px; padding: 16px 18px;
+}
+
+/* Story info card */
+#story-info-card {}
+#story-title-text {
+  font-size: 1.35rem; font-weight: 900; line-height: 1.2; margin-bottom: 6px;
+  background: linear-gradient(135deg, #c4b5fd, #f9a8d4, #93c5fd);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+#scene-title-text {
+  font-size: 0.82rem; font-weight: 800; color: var(--yellow);
+  text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;
+}
+#narration-box {
+  font-size: 0.93rem; line-height: 1.65; color: rgba(255,255,255,0.78);
+  cursor: pointer; padding: 8px 10px; border-radius: 10px;
+  border: 1px solid transparent; transition: all 0.2s;
+}
+#narration-box:hover {
+  background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.1);
+}
+.replay-hint { font-size: 0.72rem; color: var(--purple); font-weight: 700; margin-top: 4px; }
+
+/* Progress bar card */
+#progress-card {}
+#time-row { display: flex; justify-content: space-between; font-size: 0.78rem; opacity: 0.55; margin-bottom: 8px; }
+#bar-track {
+  height: 7px; background: rgba(255,255,255,0.1); border-radius: 4px;
+  cursor: pointer; position: relative;
+}
+#bar-fill {
+  height: 100%; background: linear-gradient(90deg, var(--purple), var(--pink));
+  border-radius: 4px; width: 0%; position: relative; transition: width 0.1s linear;
+}
+#bar-fill::after {
+  content: ''; position: absolute; right: -7px; top: -5px;
+  width: 16px; height: 16px; background: #fff; border-radius: 50%;
+  box-shadow: 0 0 10px rgba(139,92,246,0.9);
+}
+
+/* Controls card */
+#controls-card {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+}
+.ctrl-btn {
+  width: 46px; height: 46px; border-radius: 50%; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.15rem; background: rgba(255,255,255,0.1); color: #fff;
+  transition: all 0.2s;
+}
+.ctrl-btn:hover:not(:disabled) { transform: scale(1.12); background: rgba(255,255,255,0.18); }
+.ctrl-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+#play-btn {
+  width: 58px; height: 58px; font-size: 1.4rem;
+  background: linear-gradient(135deg, var(--purple), var(--pink));
+  box-shadow: 0 0 20px rgba(139,92,246,0.5);
+}
+#play-btn:hover:not(:disabled) { box-shadow: 0 0 32px rgba(139,92,246,0.8); }
+
+/* Mode toggle */
+#mode-toggle {
+  display: flex; background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border); border-radius: 12px; padding: 3px; gap: 3px;
+}
+.mode-btn {
+  flex: 1; padding: 7px 12px; border: none; border-radius: 9px; cursor: pointer;
+  font-family: inherit; font-weight: 700; font-size: 0.8rem;
+  background: transparent; color: rgba(255,255,255,0.45);
+  transition: all 0.2s;
+}
+.mode-btn.active {
+  background: linear-gradient(135deg, var(--purple), var(--pink));
+  color: #fff; box-shadow: 0 0 12px rgba(139,92,246,0.4);
+}
+
+/* Settings card */
+#settings-card { display: flex; flex-direction: column; gap: 13px; }
+.setting-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.setting-label { font-size: 0.88rem; font-weight: 800; opacity: 0.75; white-space: nowrap; }
+
+#speed-btns { display: flex; gap: 5px; flex-wrap: wrap; }
+.speed-btn {
+  padding: 5px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2);
+  background: transparent; color: #fff; font-family: inherit;
+  font-weight: 800; font-size: 0.78rem; cursor: pointer; transition: all 0.2s;
+}
+.speed-btn.active { background: var(--green); border-color: var(--green); box-shadow: 0 0 10px rgba(16,185,129,0.4); }
+.speed-btn:hover:not(.active) { background: rgba(255,255,255,0.1); }
+
+/* Toggle switch */
+.tog { position: relative; width: 44px; height: 24px; }
+.tog input { opacity: 0; width: 0; height: 0; }
+.tog-slider {
+  position: absolute; inset: 0; background: rgba(255,255,255,0.15);
+  border-radius: 24px; cursor: pointer; transition: 0.3s;
+}
+.tog-slider::before {
+  content: ''; position: absolute; left: 3px; bottom: 3px;
+  width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: 0.3s;
+}
+.tog input:checked + .tog-slider { background: var(--green); }
+.tog input:checked + .tog-slider::before { transform: translateX(20px); }
+
+/* Moral box */
+#moral-card {
+  background: linear-gradient(135deg, rgba(251,191,36,0.12), rgba(249,115,22,0.12));
+  border: 1px solid rgba(251,191,36,0.3); border-radius: 18px; padding: 14px 18px;
+  display: none;
+}
+#moral-card.show { display: block; animation: popIn 0.4s ease; }
+@keyframes popIn { from { transform: scale(0.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+#moral-card .mc-label { font-size: 0.72rem; font-weight: 900; color: var(--yellow); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 5px; }
+#moral-card .mc-text  { font-size: 0.95rem; font-weight: 700; line-height: 1.5; }
+
+/* ── Upload modal ── */
+#modal-backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(12px); z-index: 100; display: none;
+  align-items: center; justify-content: center;
+}
+#modal-backdrop.show { display: flex; }
+
+#modal-card {
+  background: #16102e; border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 26px; padding: 32px; width: 540px; max-width: 95vw;
+  max-height: 90vh; overflow-y: auto; position: relative;
+  animation: slideUp 0.3s ease;
+}
+@keyframes slideUp { from { transform: translateY(24px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+#modal-close {
+  position: absolute; top: 14px; right: 14px; width: 34px; height: 34px;
+  border-radius: 50%; border: none; background: rgba(255,255,255,0.1);
+  color: #fff; font-size: 1.1rem; cursor: pointer; display: flex;
+  align-items: center; justify-content: center; transition: background 0.2s;
+}
+#modal-close:hover { background: rgba(255,255,255,0.2); }
+
+#modal-card h2 {
+  font-size: 1.55rem; font-weight: 900; margin-bottom: 6px;
+  background: linear-gradient(135deg, var(--purple), var(--pink));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+#modal-card > p { color: rgba(255,255,255,0.45); font-size: 0.87rem; margin-bottom: 22px; line-height: 1.5; }
+
+#drop-zone {
+  border: 2px dashed rgba(139,92,246,0.45); border-radius: 16px;
+  padding: 32px; text-align: center; cursor: pointer;
+  transition: all 0.2s; margin-bottom: 18px;
+}
+#drop-zone:hover, #drop-zone.drag-over {
+  border-color: var(--purple); background: rgba(139,92,246,0.08);
+}
+#drop-zone .dz-icon { font-size: 2.5rem; margin-bottom: 10px; }
+#drop-zone p { color: rgba(255,255,255,0.55); font-size: 0.88rem; line-height: 1.6; }
+#drop-zone strong { color: #a78bfa; }
+
+#file-list { display: flex; flex-direction: column; gap: 7px; margin-bottom: 18px; }
+.fi {
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(255,255,255,0.05); border-radius: 10px; padding: 8px 12px;
+  font-size: 0.83rem;
+}
+.fi-icon  { font-size: 1.1rem; }
+.fi-name  { flex: 1; opacity: 0.78; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fi-ok    { color: var(--green); font-weight: 800; font-size: 0.8rem; }
+.fi-miss  { color: var(--orange); font-weight: 700; font-size: 0.8rem; }
+.fi-opt   { color: rgba(255,255,255,0.3); font-size: 0.8rem; }
+
+#load-btn {
+  width: 100%; padding: 14px; border: none; border-radius: 14px; cursor: pointer;
+  background: linear-gradient(135deg, var(--purple), var(--pink));
+  color: #fff; font-family: inherit; font-weight: 900; font-size: 1.05rem;
+  transition: all 0.2s;
+}
+#load-btn:hover:not(:disabled) { transform: scale(1.02); box-shadow: 0 0 28px rgba(139,92,246,0.55); }
+#load-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+
+/* ── Toast ── */
+#toast {
+  position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px);
+  background: rgba(16,185,129,0.9); color: #fff; padding: 10px 22px;
+  border-radius: 30px; font-weight: 800; font-size: 0.9rem;
+  transition: transform 0.3s ease; z-index: 200;
+}
+#toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  #library { display: none; }
+  #player-wrap { flex-direction: column; align-items: center; }
+  #scene-panel { width: 280px; }
+  #right-panel { width: 100%; max-width: 500px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Background blobs -->
+<div class="bg-blobs">
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+</div>
+
+<!-- Library sidebar -->
+<aside id="library">
+  <div id="library-header">✨ Story Library</div>
+  <div id="story-list">
+    <div class="empty-lib">📚 No stories yet.<br>Upload your first one!</div>
+  </div>
+  <button id="add-story-btn" onclick="openModal()">＋ Upload Story</button>
+</aside>
+
+<!-- Main player area -->
+<main id="player">
+  <div id="empty-state">
+    <span class="es-emoji">🌟</span>
+    <h2>Welcome to Lumi Stories!</h2>
+    <p>Upload a story to start watching.</p>
+    <button class="btn-primary" onclick="openModal()">📖 Upload Story</button>
+  </div>
+</main>
+
+<!-- Upload modal -->
+<div id="modal-backdrop">
+  <div id="modal-card">
+    <button id="modal-close" onclick="closeModal()">✕</button>
+    <h2>📖 Upload a Story</h2>
+    <p>
+      Select all story files at once:<br>
+      <strong>story_config.json</strong> · <strong>narration.mp3</strong> · <strong>captions.srt</strong> · <strong>scene_01.png … scene_10.png</strong>
+    </p>
+
+    <div id="drop-zone" onclick="document.getElementById('file-input').click()">
+      <div class="dz-icon">🗂️</div>
+      <p><strong>Click to browse</strong> or drag &amp; drop all files here</p>
+      <p style="margin-top:6px;font-size:0.78rem;opacity:0.6">Supports: .json · .mp3 · .srt · .png · .jpg</p>
+    </div>
+    <input type="file" id="file-input" multiple accept=".json,.png,.jpg,.jpeg,.mp3,.srt" style="display:none">
+
+    <div id="file-list"></div>
+    <button id="load-btn" disabled onclick="loadStory()">🚀 Load Story</button>
+  </div>
+</div>
+
+<!-- Toast notification -->
+<div id="toast"></div>
+
+<!-- Hidden audio -->
+<audio id="audio-el" style="display:none" preload="auto"></audio>
+
+<script>
+// ═══════════════════════════════════════════════
+//  State
+// ═══════════════════════════════════════════════
+const stories      = [];       // loaded story objects
+let activeStory    = null;
+let sceneIndex     = 0;        // 0-based
+let autoMode       = true;
+let subtitlesOn    = true;
+let speedRate      = 1.0;
+let isPlaying      = false;
+let sceneTimings   = [];       // [{start, end}] for each scene
+
+const audio = document.getElementById('audio-el');
+const pendingFiles = {};       // collected during upload
+
+// ═══════════════════════════════════════════════
+//  SRT Parser
+// ═══════════════════════════════════════════════
+function parseSRT(raw) {
+  return raw.trim().split(/\n\s*\n/).map(block => {
+    const lines = block.trim().split('\n');
+    if (lines.length < 3) return null;
+    const m = lines[1].match(/(\d+:\d+:\d+[,.]\d+)\s*-->\s*(\d+:\d+:\d+[,.]\d+)/);
+    if (!m) return null;
+    return {
+      start: tc2s(m[1]), end: tc2s(m[2]),
+      text: lines.slice(2).join(' ').replace(/<[^>]+>/g, '').trim()
+    };
+  }).filter(Boolean);
+}
+function tc2s(tc) {
+  const [h, m, s] = tc.replace(',', '.').split(':');
+  return +h * 3600 + +m * 60 + parseFloat(s);
+}
+
+// ═══════════════════════════════════════════════
+//  Compute scene timings from SRT
+// ═══════════════════════════════════════════════
+function computeTimings(config, cues) {
+  const scenes = config.scenes;
+
+  // Fallback: cumulative duration_seconds
+  if (!cues || cues.length === 0) {
+    let t = 0;
+    return scenes.map(sc => { const s = t; t += sc.duration_seconds; return { start: s, end: t }; });
+  }
+
+  // Normalize helper
+  const norm = str => str.toLowerCase()
+    .replace(/[.,!?'"—\-–]/g, '').replace(/\s+/g, ' ').trim();
+
+  const normCues = cues.map(c => ({ ...c, norm: norm(c.text) }));
+  const timings  = [];
+  let cPtr       = 0;
+
+  for (let i = 0; i < scenes.length; i++) {
+    if (i === 0) { timings.push({ start: 0, end: null }); continue; }
+
+    const needle = norm(scenes[i].narration).split(' ').slice(0, 4).join(' ');
+    let found = false;
+
+    for (let j = cPtr; j < normCues.length; j++) {
+      // Build window of 3 cues to handle split words
+      const win = normCues.slice(j, j + 3).map(c => c.norm).join(' ');
+      if (win.includes(needle)) {
+        timings.push({ start: normCues[j].start, end: null });
+        cPtr = j + 1; found = true; break;
+      }
+    }
+
+    if (!found) {
+      const prev = timings[i - 1];
+      timings.push({ start: prev.start + scenes[i - 1].duration_seconds, end: null });
+    }
+  }
+
+  // Fill end times
+  for (let i = 0; i < timings.length - 1; i++) timings[i].end = timings[i + 1].start;
+  timings[timings.length - 1].end = Infinity;
+  return timings;
+}
+
+// ═══════════════════════════════════════════════
+//  Modal
+// ═══════════════════════════════════════════════
+function openModal() {
+  Object.keys(pendingFiles).forEach(k => delete pendingFiles[k]);
+  document.getElementById('file-list').innerHTML = '';
+  document.getElementById('load-btn').disabled = true;
+  document.getElementById('modal-backdrop').classList.add('show');
+}
+function closeModal() {
+  document.getElementById('modal-backdrop').classList.remove('show');
+}
+
+// Drag & drop
+const dz = document.getElementById('drop-zone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag-over'); handleFiles([...e.dataTransfer.files]); });
+document.getElementById('file-input').addEventListener('change', e => handleFiles([...e.target.files]));
+
+function handleFiles(files) {
+  files.forEach(f => {
+    const n = f.name.toLowerCase();
+    if (n === 'story_config.json') { pendingFiles.config = f; }
+    else if (n.endsWith('.mp3'))   { pendingFiles.audio  = f; }
+    else if (n.endsWith('.srt'))   { pendingFiles.srt    = f; }
+    else if (n.match(/scene_\d+\.(png|jpe?g)$/i)) {
+      const idx = parseInt(n.match(/scene_(\d+)/i)[1]);
+      if (!pendingFiles.images) pendingFiles.images = {};
+      pendingFiles.images[idx] = f;
+    }
+  });
+  renderFileList();
+}
+
+function renderFileList() {
+  const rows = [
+    { key: 'config', label: 'story_config.json',       icon: '📋', req: true },
+    { key: 'audio',  label: 'narration.mp3',            icon: '🎵', req: true },
+    { key: 'srt',    label: 'captions.srt',             icon: '💬', req: false },
+    { key: 'images', label: 'Scene images (scene_*.png)', icon: '🖼️', req: true },
+  ];
+  document.getElementById('file-list').innerHTML = rows.map(r => {
+    const val = pendingFiles[r.key];
+    const found = r.key === 'images' ? (val && Object.keys(val).length > 0) : !!val;
+    const count = r.key === 'images' && val ? ` (${Object.keys(val).length})` : '';
+    const status = found
+      ? `<span class="fi-ok">✓ Ready</span>`
+      : (r.req ? `<span class="fi-miss">Missing</span>` : `<span class="fi-opt">Optional</span>`);
+    return `<div class="fi">
+      <span class="fi-icon">${r.icon}</span>
+      <span class="fi-name">${r.label}${count}</span>
+      ${status}
+    </div>`;
+  }).join('');
+
+  document.getElementById('load-btn').disabled =
+    !(pendingFiles.config && pendingFiles.audio && pendingFiles.images);
+}
+
+async function loadStory() {
+  document.getElementById('load-btn').textContent = '⏳ Loading…';
+  document.getElementById('load-btn').disabled = true;
+
+  try {
+    const config   = JSON.parse(await pendingFiles.config.text());
+    const audioUrl = URL.createObjectURL(pendingFiles.audio);
+    const srtCues  = pendingFiles.srt
+      ? parseSRT(await pendingFiles.srt.text()) : [];
+
+    const imageUrls = {};
+    for (const [idx, f] of Object.entries(pendingFiles.images || {})) {
+      imageUrls[parseInt(idx)] = URL.createObjectURL(f);
+    }
+
+    const story = {
+      id: Date.now(),
+      config, audioUrl, srtCues, imageUrls,
+      timings: computeTimings(config, srtCues)
+    };
+
+    stories.push(story);
+    renderLibrary();
+    closeModal();
+    switchStory(story);
+    showToast('✨ Story loaded!');
+  } catch (err) {
+    showToast('❌ Error: ' + err.message);
+  } finally {
+    document.getElementById('load-btn').textContent = '🚀 Load Story';
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  Library
+// ═══════════════════════════════════════════════
+function renderLibrary() {
+  const el = document.getElementById('story-list');
+  if (stories.length === 0) {
+    el.innerHTML = '<div class="empty-lib">📚 No stories yet.<br>Upload your first one!</div>';
+    return;
+  }
+  el.innerHTML = stories.map(s => `
+    <div class="story-card ${activeStory && activeStory.id === s.id ? 'active' : ''}"
+         onclick="switchStory(stories.find(x=>x.id===${s.id}))">
+      <button class="sc-delete" onclick="event.stopPropagation();deleteStory(${s.id})">✕</button>
+      <div class="sc-title">${s.config.title}</div>
+      <div class="sc-meta">${s.config.scenes.length} scenes · ${(s.config.hashtags||[])[0]||''}</div>
+    </div>
+  `).join('');
+}
+
+function deleteStory(id) {
+  const idx = stories.findIndex(s => s.id === id);
+  if (idx === -1) return;
+  const s = stories.splice(idx, 1)[0];
+  URL.revokeObjectURL(s.audioUrl);
+  Object.values(s.imageUrls).forEach(u => URL.revokeObjectURL(u));
+  if (activeStory && activeStory.id === id) {
+    audio.pause(); activeStory = null;
+    if (stories.length > 0) switchStory(stories[stories.length - 1]);
+    else { document.getElementById('player').innerHTML = emptyStateHTML(); }
+  }
+  renderLibrary();
+}
+
+function emptyStateHTML() {
+  return `<div id="empty-state">
+    <span class="es-emoji">🌟</span>
+    <h2>Welcome to Lumi Stories!</h2>
+    <p>Upload a story to start watching.</p>
+    <button class="btn-primary" onclick="openModal()">📖 Upload Story</button>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════
+//  Player
+// ═══════════════════════════════════════════════
+function switchStory(story) {
+  audio.pause(); isPlaying = false;
+  activeStory = story;
+  sceneIndex  = 0;
+  sceneTimings = story.timings;
+
+  audio.src = story.audioUrl;
+  audio.playbackRate = speedRate;
+  audio.load();
+
+  renderLibrary();
+  buildPlayer();
+  seekToScene(0);
+}
+
+function buildPlayer() {
+  const { config } = activeStory;
+  const n = config.scenes.length;
+
+  document.getElementById('player').innerHTML = `
+  <div id="player-wrap">
+
+    <!-- Scene image panel -->
+    <div id="scene-panel">
+      <img id="scene-img" src="" alt="">
+      <div id="on-screen-cap"><span id="on-screen-cap-text"></span></div>
+      <div id="scene-badge">Scene <span id="scene-num">1</span>/${n}</div>
+      <div id="live-subtitle">
+        <span id="live-subtitle-text" onclick="replayScene()" title="Click to re-read">…</span>
+      </div>
+      <div id="prog-dots">
+        ${config.scenes.map((_, i) =>
+          `<div class="pdot ${i===0?'active':''}" onclick="goToScene(${i})" title="Scene ${i+1}"></div>`
+        ).join('')}
+      </div>
+    </div>
+
+    <!-- Right panel -->
+    <div id="right-panel">
+
+      <!-- Story info -->
+      <div class="panel-card" id="story-info-card">
+        <div id="story-title-text">${config.title}</div>
+        <div id="scene-title-text">Scene 1</div>
+        <div id="narration-box" onclick="replayScene()" title="Click to re-read this scene">
+          ${config.scenes[0].narration}
+          <div class="replay-hint">🔁 Click to re-read</div>
+        </div>
+      </div>
+
+      <!-- Progress bar -->
+      <div class="panel-card" id="progress-card">
+        <div id="time-row">
+          <span id="time-curr">0:00</span>
+          <span id="time-tot">0:00</span>
+        </div>
+        <div id="bar-track" onclick="seekFromBar(event)">
+          <div id="bar-fill"></div>
+        </div>
+      </div>
+
+      <!-- Transport controls -->
+      <div class="panel-card" id="controls-card">
+        <button class="ctrl-btn" id="prev-btn" onclick="prevScene()" title="Previous">⏮</button>
+        <button class="ctrl-btn" id="play-btn" onclick="togglePlay()">▶</button>
+        <button class="ctrl-btn" id="next-btn" onclick="nextScene()" title="Next">⏭</button>
+
+        <div id="mode-toggle">
+          <button class="mode-btn ${autoMode?'active':''}" onclick="setMode(true)"  id="auto-btn">🔄 Auto</button>
+          <button class="mode-btn ${!autoMode?'active':''}" onclick="setMode(false)" id="man-btn">👆 Manual</button>
+        </div>
+      </div>
+
+      <!-- Settings -->
+      <div class="panel-card" id="settings-card">
+        <div class="setting-row">
+          <span class="setting-label">⚡ Speed</span>
+          <div id="speed-btns">
+            ${[0.5,0.75,1,1.25,1.5,2].map(s =>
+              `<button class="speed-btn ${speedRate===s?'active':''}" onclick="setSpeed(${s})">${s}x</button>`
+            ).join('')}
+          </div>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">💬 Subtitles</span>
+          <label class="tog">
+            <input type="checkbox" id="sub-toggle" ${subtitlesOn?'checked':''} onchange="toggleSubs(this.checked)">
+            <span class="tog-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Moral box (shown on last scene) -->
+      <div id="moral-card">
+        <div class="mc-label">💡 Today's Lesson</div>
+        <div class="mc-text">${config.moral}</div>
+      </div>
+
+    </div>
+  </div>`;
+
+  updateSceneUI();
+}
+
+function updateSceneUI() {
+  if (!activeStory) return;
+  const { config, imageUrls, srtCues } = activeStory;
+  const scene = config.scenes[sceneIndex];
+  const n     = config.scenes.length;
+
+  // Image (fade)
+  const img = document.getElementById('scene-img');
+  if (img) {
+    img.style.opacity = '0';
+    img.src = imageUrls[scene.index] || '';
+    img.onload = () => { if (img) img.style.opacity = '1'; };
+    if (!img.src) img.style.opacity = '1';
+  }
+
+  // Labels
+  q('#scene-num')       && (q('#scene-num').textContent = sceneIndex + 1);
+  q('#scene-title-text')&& (q('#scene-title-text').textContent = `Scene ${sceneIndex+1} · ${scene.title}`);
+  q('#narration-box')   && (q('#narration-box').innerHTML = scene.narration + '<div class="replay-hint">🔁 Click to re-read</div>');
+  q('#on-screen-cap-text') && (q('#on-screen-cap-text').textContent = scene.on_screen_text || '');
+
+  // Default subtitle = on_screen_text until SRT fires
+  if (q('#live-subtitle-text') && !srtCues.length) {
+    q('#live-subtitle-text').textContent = scene.on_screen_text || '';
+  }
+
+  // Subtitle visibility
+  const subEl = q('#live-subtitle');
+  const capEl = q('#on-screen-cap');
+  if (subEl) subEl.style.opacity  = subtitlesOn ? '1' : '0';
+  if (capEl) capEl.style.opacity  = subtitlesOn ? '1' : '0';
+
+  // Progress dots
+  document.querySelectorAll('.pdot').forEach((d, i) => {
+    d.classList.toggle('active', i === sceneIndex);
+    d.classList.toggle('done',   i < sceneIndex);
+  });
+
+  // Prev/Next buttons
+  q('#prev-btn') && (q('#prev-btn').disabled = sceneIndex === 0);
+  q('#next-btn') && (q('#next-btn').disabled = sceneIndex === n - 1);
+
+  // Moral card on last scene
+  const mc = q('#moral-card');
+  if (mc) mc.classList.toggle('show', sceneIndex === n - 1);
+}
+
+// ═══════════════════════════════════════════════
+//  Playback control
+// ═══════════════════════════════════════════════
+function seekToScene(idx) {
+  sceneIndex = idx;
+  const t = sceneTimings[idx];
+  if (t) audio.currentTime = t.start;
+  updateSceneUI();
+}
+
+function goToScene(idx) {
+  const wasPlaying = isPlaying;
+  if (wasPlaying) audio.pause();
+  seekToScene(idx);
+  if (wasPlaying) audio.play();
+}
+
+function prevScene() { if (sceneIndex > 0) goToScene(sceneIndex - 1); }
+function nextScene() {
+  if (sceneIndex < activeStory.config.scenes.length - 1) goToScene(sceneIndex + 1);
+}
+
+function replayScene() {
+  const t = sceneTimings[sceneIndex];
+  if (t) { audio.currentTime = t.start; }
+  if (!isPlaying) { audio.play(); }
+  // Flash subtitle text
+  const el = q('#live-subtitle-text');
+  if (el) { el.classList.remove('replay-flash'); void el.offsetWidth; el.classList.add('replay-flash'); }
+}
+
+function togglePlay() {
+  if (isPlaying) audio.pause(); else audio.play();
+}
+
+function setMode(auto) {
+  autoMode = auto;
+  q('#auto-btn') && q('#auto-btn').classList.toggle('active', auto);
+  q('#man-btn')  && q('#man-btn').classList.toggle('active', !auto);
+}
+
+function setSpeed(s) {
+  speedRate = s; audio.playbackRate = s;
+  document.querySelectorAll('.speed-btn').forEach(b =>
+    b.classList.toggle('active', parseFloat(b.textContent) === s));
+}
+
+function toggleSubs(on) {
+  subtitlesOn = on;
+  const subEl = q('#live-subtitle');
+  const capEl = q('#on-screen-cap');
+  if (subEl) subEl.style.opacity  = on ? '1' : '0';
+  if (capEl) capEl.style.opacity  = on ? '1' : '0';
+}
+
+function seekFromBar(e) {
+  if (!audio.duration) return;
+  const rect = q('#bar-track').getBoundingClientRect();
+  const frac = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  audio.currentTime = frac * audio.duration;
+}
+
+// ═══════════════════════════════════════════════
+//  Audio events
+// ═══════════════════════════════════════════════
+audio.addEventListener('play',  () => { isPlaying = true;  updatePlayBtn(); });
+audio.addEventListener('pause', () => { isPlaying = false; updatePlayBtn(); });
+audio.addEventListener('ended', () => {
+  isPlaying = false; updatePlayBtn();
+  const mc = q('#moral-card'); if (mc) mc.classList.add('show');
+});
+
+audio.addEventListener('timeupdate', () => {
+  if (!activeStory) return;
+  const t = audio.currentTime;
+  const d = audio.duration || 1;
+
+  // Progress bar
+  const fill = q('#bar-fill');
+  if (fill) fill.style.width = ((t / d) * 100) + '%';
+
+  // Time display
+  q('#time-curr') && (q('#time-curr').textContent = fmt(t));
+  q('#time-tot')  && (q('#time-tot').textContent  = fmt(d));
+
+  // Live subtitle from SRT
+  if (activeStory.srtCues.length > 0) {
+    const cue = activeStory.srtCues.find(c => t >= c.start - 0.05 && t <= c.end + 0.05);
+    const el  = q('#live-subtitle-text');
+    if (el) el.textContent = cue ? cue.text : (activeStory.config.scenes[sceneIndex]?.on_screen_text || '');
+  }
+
+  // Auto-advance scene
+  if (autoMode && activeStory) {
+    const timing = sceneTimings[sceneIndex];
+    const maxScene = activeStory.config.scenes.length - 1;
+    if (timing && timing.end !== Infinity && t >= timing.end - 0.15 && sceneIndex < maxScene) {
+      sceneIndex++;
+      updateSceneUI();
+    }
+  }
+});
+
+// Also sync scene when user manually seeks via audio (keyboard etc)
+audio.addEventListener('seeked', () => {
+  if (!activeStory) return;
+  const t = audio.currentTime;
+  // Find which scene this timestamp belongs to
+  for (let i = 0; i < sceneTimings.length; i++) {
+    const { start, end } = sceneTimings[i];
+    if (t >= start && (end === Infinity || t < end)) {
+      if (i !== sceneIndex) { sceneIndex = i; updateSceneUI(); }
+      break;
+    }
+  }
+});
+
+function updatePlayBtn() {
+  const btn = q('#play-btn');
+  if (btn) btn.textContent = isPlaying ? '⏸' : '▶';
+}
+
+// ═══════════════════════════════════════════════
+//  Utilities
+// ═══════════════════════════════════════════════
+const q = sel => document.querySelector(sel);
+const fmt = s => `${Math.floor(s/60)}:${Math.floor(s%60).toString().padStart(2,'0')}`;
+
+function showToast(msg) {
+  const t = q('#toast'); t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if (!activeStory) return;
+  if (['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
+  if (e.code === 'Space')       { e.preventDefault(); togglePlay(); }
+  if (e.code === 'ArrowRight')  nextScene();
+  if (e.code === 'ArrowLeft')   prevScene();
+  if (e.code === 'KeyR')        replayScene();
+  if (e.code === 'KeyS')        {
+    subtitlesOn = !subtitlesOn;
+    const cb = q('#sub-toggle'); if (cb) cb.checked = subtitlesOn;
+    toggleSubs(subtitlesOn);
+  }
+});
+</script>
+</body>
+</html>

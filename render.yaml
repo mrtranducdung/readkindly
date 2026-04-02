@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: kids-story-webapp
+    env: python
+    buildCommand: pip install -r requirements-webapp.txt
+    startCommand: gunicorn webapp:app --bind 0.0.0.0:$PORT --workers 2 --timeout 60
+    disk:
+      name: story-data
+      mountPath: /data
+      sizeGB: 10
+    envVars:
+      - key: DATA_DIR
+        value: /data
+      - key: ADMIN_PASSWORD
+        sync: false        # set this in Render dashboard — never commit the value
+      - key: SECRET_KEY
+        sync: false        # set this in Render dashboard — never commit the value

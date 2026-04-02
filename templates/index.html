@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lumi Story Player</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --purple:#8b5cf6; --pink:#ec4899; --blue:#3b82f6; --teal:#06b6d4;
+  --green:#10b981;  --orange:#f97316; --yellow:#fbbf24; --red:#ef4444;
+  --bg:#0c0a1e; --card:rgba(255,255,255,.06); --border:rgba(255,255,255,.1);
+}
+body { font-family:'Nunito',system-ui,sans-serif; background:var(--bg); color:#fff; min-height:100vh; overflow-x:hidden; }
+
+/* blobs */
+.blobs { position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden; }
+.blob  { position:absolute;border-radius:50%;filter:blur(90px);animation:drift 14s ease-in-out infinite alternate; }
+.blob-1 { width:600px;height:600px;background:var(--purple);opacity:.18;top:-150px;left:-100px; }
+.blob-2 { width:500px;height:500px;background:var(--pink);  opacity:.14;top:45%;right:-80px;  animation-delay:-5s; }
+.blob-3 { width:420px;height:420px;background:var(--teal);  opacity:.12;bottom:-80px;left:35%;animation-delay:-9s; }
+@keyframes drift { from{transform:translate(0,0) scale(1)} to{transform:translate(25px,18px) scale(1.08)} }
+
+/* pages */
+.page { position:relative;z-index:1;min-height:100vh;display:none;flex-direction:column; }
+.page.active { display:flex; }
+
+/* topbar */
+.topbar {
+  display:flex;align-items:center;justify-content:space-between;padding:14px 28px;
+  background:rgba(12,10,30,.75);backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50;
+}
+.logo { font-size:1.35rem;font-weight:900;cursor:pointer;
+  background:linear-gradient(135deg,#c4b5fd,#f9a8d4,#67e8f9);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent; }
+.topbar-r { display:flex;gap:8px;align-items:center; }
+
+/* buttons */
+.btn { padding:9px 18px;border:none;border-radius:12px;cursor:pointer;font-family:inherit;font-weight:800;font-size:.88rem;transition:all .2s;color:#fff; }
+.btn-ghost   { background:rgba(255,255,255,.08);border:1px solid var(--border); }
+.btn-ghost:hover { background:rgba(255,255,255,.15); }
+.btn-primary { background:linear-gradient(135deg,var(--purple),var(--pink)); }
+.btn-primary:hover { transform:scale(1.04);box-shadow:0 0 22px rgba(139,92,246,.5); }
+.btn-danger  { background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:var(--red); }
+.btn-danger:hover { background:rgba(239,68,68,.3); }
+.btn-sm { padding:6px 12px;font-size:.76rem;border-radius:8px; }
+.btn:disabled { opacity:.3;cursor:not-allowed;transform:none!important; }
+
+/* ══ HOME ══ */
+.home-hero { text-align:center;padding:56px 20px 36px; }
+.home-hero h1 {
+  font-size:clamp(2rem,5vw,3.4rem);font-weight:900;line-height:1.1;margin-bottom:12px;
+  background:linear-gradient(135deg,#c4b5fd,#f9a8d4,#6ee7b7);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.home-hero p { color:rgba(255,255,255,.4);font-size:1.05rem; }
+.story-grid {
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+  gap:20px;padding:16px 32px 60px;max-width:1200px;margin:0 auto;width:100%;
+}
+.story-card {
+  background:var(--card);border:1px solid var(--border);border-radius:20px;
+  overflow:hidden;cursor:pointer;transition:all .25s ease;position:relative;
+}
+.story-card:hover {
+  transform:translateY(-6px) scale(1.02);
+  border-color:var(--purple);box-shadow:0 16px 40px rgba(139,92,246,.3);
+}
+.story-card-thumb { width:100%;aspect-ratio:9/16;object-fit:cover;background:#1a1030;display:block; }
+.story-card-ph {
+  width:100%;aspect-ratio:9/16;background:linear-gradient(135deg,#1e1040,#2d1060);
+  display:flex;align-items:center;justify-content:center;font-size:3rem;
+}
+.story-card-body { padding:14px; }
+.story-card-title { font-weight:800;font-size:.9rem;line-height:1.3;margin-bottom:4px; }
+.story-card-meta  { font-size:.7rem;opacity:.4; }
+.story-card-scenes {
+  position:absolute;top:10px;left:10px;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);
+  border-radius:20px;padding:3px 10px;font-size:.66rem;font-weight:800;color:var(--yellow);
+}
+.story-card-del {
+  position:absolute;top:10px;right:10px;
+  background:rgba(239,68,68,.75);backdrop-filter:blur(6px);
+  border:none;border-radius:50%;width:28px;height:28px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.85rem;cursor:pointer;color:#fff;
+  transition:background .2s,transform .15s;
+}
+.story-card-del:hover { background:rgba(239,68,68,1);transform:scale(1.15); }
+.empty-home { grid-column:1/-1;text-align:center;padding:80px 20px;opacity:.35; }
+.empty-home .em { font-size:5rem;display:block;margin-bottom:14px; }
+
+/* ══ PLAYER (fullscreen) ══ */
+#page-player {
+  position:fixed;inset:0;background:#000;overflow:hidden;z-index:10;display:none;
+}
+#page-player.active { display:flex;align-items:center;justify-content:center; }
+
+/* The 9:16 image frame — all overlays live inside this */
+#img-frame {
+  position:relative;
+  /* Fill viewport height, keep 9:16. On portrait screens, fill width instead. */
+  height:100vh;
+  width:calc(100vh * 9 / 16);
+  max-width:100vw;
+  max-height:calc(100vw * 16 / 9);
+  overflow:hidden;
+  background:#0c0a1e;
+}
+
+#scene-img {
+  width:100%;height:100%;object-fit:cover;
+  transition:opacity .35s ease;
+  display:block;
+}
+
+/* Top HUD — inside frame */
+#top-hud {
+  position:absolute;top:0;left:0;right:0;z-index:20;
+  padding:10px 12px;display:flex;align-items:center;gap:8px;
+  background:linear-gradient(rgba(0,0,0,.65),transparent);
+}
+#back-btn {
+  background:rgba(255,255,255,.15);backdrop-filter:blur(8px);
+  border:none;border-radius:20px;color:#fff;
+  font-family:inherit;font-size:.72rem;font-weight:800;
+  padding:5px 12px;cursor:pointer;flex-shrink:0;transition:background .2s;
+}
+#back-btn:hover { background:rgba(255,255,255,.25); }
+#story-title-sm {
+  flex:1;font-size:.74rem;font-weight:800;opacity:.6;
+  overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+}
+#scene-badge-sm {
+  background:rgba(0,0,0,.5);backdrop-filter:blur(6px);border-radius:20px;
+  padding:3px 9px;font-size:.64rem;font-weight:700;flex-shrink:0;
+}
+
+/* Caption (on_screen_text) — inside frame */
+#cap-top {
+  position:absolute;top:46px;left:0;right:0;z-index:19;
+  text-align:center;padding:4px 16px;pointer-events:none;transition:opacity .3s;
+}
+#cap-top-text {
+  font-size:.72rem;font-weight:900;color:var(--yellow);
+  text-shadow:0 2px 6px rgba(0,0,0,.9);letter-spacing:.5px;text-transform:uppercase;
+  background:rgba(0,0,0,.38);padding:3px 10px;border-radius:20px;display:inline-block;
+}
+
+/* Subtitle — inside frame, above controls bar */
+#sub-overlay {
+  position:absolute;bottom:58px;left:0;right:0;z-index:19;
+  text-align:center;padding:0 14px;transition:opacity .3s;
+}
+#sub-text {
+  font-size:.92rem;font-weight:800;color:#fff;line-height:1.45;
+  cursor:pointer;display:inline-block;
+  padding:6px 12px;border-radius:10px;
+  background:rgba(0,0,0,.52);backdrop-filter:blur(4px);
+  max-width:96%;word-break:break-word;transition:background .2s;
+}
+#sub-text:hover { background:rgba(0,0,0,.68); }
+#sub-text.flash { animation:subflash .35s ease; }
+@keyframes subflash { 0%,100%{background:rgba(0,0,0,.52)}50%{background:rgba(251,191,36,.45)} }
+
+/* Progress dots — inside frame */
+#pdots {
+  position:absolute;bottom:52px;left:50%;transform:translateX(-50%);
+  display:flex;gap:4px;align-items:center;z-index:20;pointer-events:none;
+}
+.pdot {
+  height:4px;width:4px;border-radius:2px;
+  background:rgba(255,255,255,.3);transition:all .3s ease;cursor:pointer;pointer-events:auto;
+}
+.pdot.active { width:14px;background:#fff; }
+.pdot.done   { background:rgba(255,255,255,.6); }
+
+/* Controls bar — inside frame at bottom */
+#controls-bar {
+  position:absolute;bottom:0;left:0;right:0;height:50px;z-index:20;
+  display:flex;align-items:center;gap:7px;padding:0 12px;
+  background:rgba(0,0,0,.6);backdrop-filter:blur(16px);
+}
+.ctrl-btn {
+  width:34px;height:34px;border-radius:50%;border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1rem;background:rgba(255,255,255,.12);color:#fff;
+  transition:all .2s;flex-shrink:0;
+}
+.ctrl-btn:hover:not(:disabled) { background:rgba(255,255,255,.22);transform:scale(1.1); }
+.ctrl-btn:disabled { opacity:.25;cursor:not-allowed; }
+#play-btn {
+  width:42px;height:42px;font-size:1.2rem;
+  background:linear-gradient(135deg,var(--purple),var(--pink));
+  box-shadow:0 0 14px rgba(139,92,246,.5);
+}
+.flex-gap { flex:1; }
+#mode-toggle {
+  display:flex;background:rgba(255,255,255,.08);border-radius:10px;padding:2px;gap:2px;
+}
+.mode-btn {
+  padding:4px 8px;border:none;border-radius:8px;cursor:pointer;
+  font-family:inherit;font-weight:700;font-size:.65rem;
+  background:transparent;color:rgba(255,255,255,.45);transition:all .2s;
+}
+.mode-btn.on { background:linear-gradient(135deg,var(--purple),var(--pink));color:#fff; }
+.ctrl-pill {
+  padding:4px 9px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);
+  border-radius:8px;color:#fff;font-family:inherit;font-weight:800;font-size:.67rem;
+  cursor:pointer;transition:all .2s;flex-shrink:0;
+}
+.ctrl-pill:hover { background:rgba(255,255,255,.2); }
+.ctrl-pill.off { opacity:.35; }
+
+/* Moral card — inside frame, shown on outro */
+#moral-card {
+  position:absolute;bottom:58px;left:10px;right:10px;z-index:21;
+  background:linear-gradient(135deg,rgba(251,191,36,.2),rgba(249,115,22,.2));
+  border:1px solid rgba(251,191,36,.4);border-radius:14px;
+  padding:10px 14px;display:none;backdrop-filter:blur(12px);
+}
+#moral-card.show { display:block;animation:popIn .4s ease; }
+@keyframes popIn { from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1} }
+.mc-label { font-size:.62rem;font-weight:900;color:var(--yellow);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:3px; }
+.mc-text  { font-size:.86rem;font-weight:700;line-height:1.45; }
+
+/* ══ ADMIN ══ */
+#login-card {
+  max-width:400px;margin:80px auto;background:var(--card);border:1px solid var(--border);
+  border-radius:24px;padding:36px;text-align:center;
+}
+#login-card h2 { margin-bottom:8px;
+  background:linear-gradient(135deg,var(--purple),var(--pink));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+#login-card p { color:rgba(255,255,255,.4);font-size:.88rem;margin-bottom:24px; }
+.form-group { text-align:left;margin-bottom:14px; }
+.form-group label { display:block;font-weight:700;font-size:.82rem;margin-bottom:6px;opacity:.65; }
+.form-input {
+  width:100%;padding:12px 14px;background:rgba(255,255,255,.07);border:1px solid var(--border);
+  border-radius:12px;color:#fff;font-family:inherit;font-size:.95rem;transition:border-color .2s;
+}
+.form-input:focus { outline:none;border-color:var(--purple); }
+.err-msg { color:var(--red);font-size:.8rem;margin-top:6px;display:none; }
+.err-msg.show { display:block; }
+.admin-wrap { max-width:860px;margin:0 auto;padding:30px 24px 60px; }
+.admin-wrap h2 {
+  font-size:1.5rem;font-weight:900;margin-bottom:22px;
+  background:linear-gradient(135deg,var(--purple),var(--pink));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.upload-card { background:var(--card);border:1px solid var(--border);border-radius:20px;padding:24px;margin-bottom:28px; }
+.upload-card h3 { font-size:1rem;font-weight:800;color:#a78bfa;margin-bottom:16px; }
+#drop-zone {
+  border:2px dashed rgba(139,92,246,.4);border-radius:14px;
+  padding:28px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:14px;
+}
+#drop-zone:hover,#drop-zone.dragover { border-color:var(--purple);background:rgba(139,92,246,.08); }
+#drop-zone .dz-icon { font-size:2.1rem;margin-bottom:8px; }
+#drop-zone p { color:rgba(255,255,255,.5);font-size:.85rem;line-height:1.6; }
+#drop-zone strong { color:#a78bfa; }
+#file-status { display:flex;flex-direction:column;gap:6px;margin-bottom:14px; }
+.fs-row {
+  display:flex;align-items:center;gap:10px;
+  background:rgba(255,255,255,.04);border-radius:10px;padding:7px 12px;font-size:.8rem;
+}
+.fs-icon { font-size:.95rem; }
+.fs-name { flex:1;opacity:.72;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.fs-ok   { color:var(--green);font-weight:800; }
+.fs-miss { color:var(--orange);font-weight:700; }
+.fs-opt  { color:rgba(255,255,255,.28); }
+#upload-bar-wrap { background:rgba(255,255,255,.06);border-radius:8px;height:7px;margin-bottom:12px;display:none; }
+#upload-bar { height:100%;background:linear-gradient(90deg,var(--purple),var(--pink));border-radius:8px;width:0%;transition:width .3s; }
+#admin-story-list { display:flex;flex-direction:column;gap:10px; }
+.asr {
+  display:flex;align-items:center;gap:13px;background:var(--card);
+  border:1px solid var(--border);border-radius:16px;padding:11px 15px;
+}
+.asr-thumb { width:34px;height:60px;border-radius:8px;object-fit:cover;flex-shrink:0; }
+.asr-ph    { width:34px;height:60px;border-radius:8px;background:linear-gradient(135deg,#1e1040,#2d1060);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0; }
+.asr-info  { flex:1;min-width:0; }
+.asr-title { font-weight:800;font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.asr-meta  { font-size:.68rem;opacity:.38;margin-top:2px; }
+.asr-acts  { display:flex;gap:6px;flex-shrink:0; }
+.drag-h    { cursor:grab;opacity:.28;font-size:1.1rem;flex-shrink:0; }
+.drag-h:active { cursor:grabbing; }
+#modal-bg {
+  position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(12px);
+  z-index:100;display:none;align-items:center;justify-content:center;
+}
+#modal-bg.show { display:flex; }
+#modal-box {
+  background:#16102e;border:1px solid rgba(255,255,255,.15);border-radius:24px;
+  padding:32px;width:440px;max-width:96vw;animation:slideUp .3s ease;position:relative;
+}
+@keyframes slideUp { from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1} }
+#modal-box h3 { font-size:1.15rem;font-weight:900;margin-bottom:8px; }
+#modal-box p  { color:rgba(255,255,255,.48);font-size:.88rem;margin-bottom:18px;line-height:1.5; }
+.modal-acts   { display:flex;gap:10px;margin-top:20px; }
+.modal-x { position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;border:none;background:rgba(255,255,255,.1);color:#fff;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center; }
+#toast {
+  position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(80px);
+  padding:11px 24px;border-radius:30px;font-weight:800;font-size:.86rem;
+  transition:transform .3s ease;z-index:200;white-space:nowrap;
+}
+#toast.show { transform:translateX(-50%) translateY(0); }
+#toast.ok   { background:rgba(16,185,129,.95); }
+#toast.err  { background:rgba(239,68,68,.95); }
+::-webkit-scrollbar { width:5px; }
+::-webkit-scrollbar-thumb { background:rgba(255,255,255,.15);border-radius:3px; }
+@media(max-width:700px) {
+  .story-grid { grid-template-columns:repeat(auto-fill,minmax(155px,1fr));padding:14px; }
+}
+</style>
+</head>
+<body>
+<div class="blobs">
+  <div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div>
+</div>
+
+<!-- ══ HOME ══ -->
+<div id="page-home" class="page">
+  <div class="topbar">
+    <span class="logo" onclick="nav('home')">✨ Lumi Stories</span>
+    <div class="topbar-r">
+      <span id="home-admin-tag" style="font-size:.78rem;opacity:.35;"></span>
+      <button class="btn btn-ghost" onclick="nav('admin')">🔑 Admin</button>
+    </div>
+  </div>
+  <div class="home-hero">
+    <h1>📖 Story Library</h1>
+    <p>Pick a story and let the magic begin!</p>
+  </div>
+  <div id="story-grid" class="story-grid"></div>
+</div>
+
+<!-- ══ PLAYER (fullscreen) ══ -->
+<div id="page-player">
+  <!-- 9:16 frame — image + ALL overlays live inside here -->
+  <div id="img-frame">
+    <img id="scene-img" src="" alt="">
+
+    <!-- Top HUD -->
+    <div id="top-hud">
+      <button id="back-btn" onclick="nav('home')">← Library</button>
+      <div id="story-title-sm"></div>
+      <div id="scene-badge-sm"><span id="scene-num">1</span>/<span id="scene-tot">12</span></div>
+    </div>
+
+    <!-- Caption (on_screen_text) -->
+    <div id="cap-top"><span id="cap-top-text"></span></div>
+
+    <!-- Subtitle — inside the image frame -->
+    <div id="sub-overlay">
+      <span id="sub-text" onclick="replayScene()"></span>
+    </div>
+
+    <!-- Progress dots -->
+    <div id="pdots"></div>
+
+    <!-- Moral card (shown on outro slide) -->
+    <div id="moral-card">
+      <div class="mc-label">💡 Today's Lesson</div>
+      <div class="mc-text" id="moral-text"></div>
+    </div>
+
+    <!-- Controls bar -->
+    <div id="controls-bar">
+      <button class="ctrl-btn" id="prev-btn" onclick="prevScene()" title="Previous (←)">⏮</button>
+      <button class="ctrl-btn" id="play-btn" onclick="togglePlay()" title="Play/Pause (Space)">▶</button>
+      <button class="ctrl-btn" id="next-btn" onclick="nextScene()" title="Next (→)">⏭</button>
+      <button class="ctrl-btn" onclick="replayScene()" title="Replay (R)">🔁</button>
+      <div class="flex-gap"></div>
+      <div id="mode-toggle">
+        <button class="mode-btn"    id="auto-btn" onclick="setMode(true)">Auto</button>
+        <button class="mode-btn on" id="man-btn"  onclick="setMode(false)">Manual</button>
+      </div>
+      <button id="spd-btn" class="ctrl-pill" onclick="cycleSpeed()">1×</button>
+      <button id="sub-btn" class="ctrl-pill" onclick="toggleSubsBtn()" title="Subtitles (S)">💬</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ADMIN ══ -->
+<div id="page-admin" class="page">
+  <div class="topbar">
+    <span class="logo" onclick="nav('home')">✨ Lumi Stories</span>
+    <div class="topbar-r">
+      <button class="btn btn-ghost" onclick="nav('home')">← Home</button>
+      <button class="btn btn-ghost btn-sm" id="logout-btn" onclick="doLogout()" style="display:none">Logout</button>
+    </div>
+  </div>
+  <div id="login-card">
+    <h2>🔑 Admin Login</h2>
+    <p>Enter the admin password to manage stories.</p>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" class="form-input" id="login-pw" placeholder="••••••••"
+             onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div class="err-msg" id="login-err">Wrong password. Try again.</div>
+    <button class="btn btn-primary" style="width:100%;margin-top:6px" onclick="doLogin()">Sign In</button>
+  </div>
+  <div id="admin-dash" class="admin-wrap" style="display:none">
+    <h2>📋 Admin Dashboard</h2>
+    <div class="upload-card">
+      <h3>⬆ Upload New Story</h3>
+      <div id="drop-zone" onclick="document.getElementById('file-in').click()">
+        <div class="dz-icon">🗂️</div>
+        <p><strong>Click to browse</strong> or drag &amp; drop all story files</p>
+        <p style="margin-top:6px;font-size:.76rem;opacity:.5">
+          story_config.json &nbsp;·&nbsp; scene_01.png … &nbsp;·&nbsp; hook.mp3 &nbsp;·&nbsp; outro.mp3 &nbsp;·&nbsp; scene_01.mp3 …<br>
+          (from <code>out/YYYY-MM-DD/scenes/</code> + <code>images/</code> + config)
+        </p>
+      </div>
+      <input type="file" id="file-in" multiple accept=".json,.png,.jpg,.jpeg,.mp3" style="display:none">
+      <div id="file-status"></div>
+      <div id="upload-bar-wrap"><div id="upload-bar"></div></div>
+      <button class="btn btn-primary" id="upload-btn" disabled onclick="doUpload()" style="width:100%">
+        🚀 Upload Story
+      </button>
+    </div>
+    <h2>📚 Published Stories</h2>
+    <div id="admin-story-list"></div>
+  </div>
+</div>
+
+<div id="modal-bg">
+  <div id="modal-box">
+    <button class="modal-x" onclick="closeModal()">✕</button>
+    <h3 id="modal-title"></h3>
+    <p  id="modal-body"></p>
+    <div class="modal-acts">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-danger" style="flex:1" id="modal-ok">Delete</button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════════
+let story     = null;
+let slides    = [];
+let slideIdx  = 0;
+let autoMode  = false;
+let subsOn    = true;
+let speed     = 1.0;
+let isPlaying = false;
+let sceneAudio = null;
+const SPEEDS  = [0.5, 0.75, 1, 1.25, 1.5, 2];
+const pending = {};
+
+// ═══════════════════════════════════════════════════════════
+//  ROUTING
+// ═══════════════════════════════════════════════════════════
+function nav(page, param) {
+  document.getElementById('page-home').classList.remove('active');
+  document.getElementById('page-admin').classList.remove('active');
+  document.getElementById('page-player').classList.remove('active');
+
+  if (page === 'home') {
+    location.hash = '#home';
+    document.getElementById('page-home').classList.add('active');
+    loadHome();
+  } else if (page === 'play' && param) {
+    stopAudio();
+    location.hash = '#play/' + param;
+    document.getElementById('page-player').classList.add('active');
+    loadPlayer(param);
+  } else if (page === 'admin') {
+    location.hash = '#admin';
+    document.getElementById('page-admin').classList.add('active');
+    checkAdmin();
+  }
+}
+
+window.addEventListener('hashchange', routeHash);
+function routeHash() {
+  const h = location.hash || '#home';
+  if (h.startsWith('#play/')) {
+    document.getElementById('page-home').classList.remove('active');
+    document.getElementById('page-admin').classList.remove('active');
+    document.getElementById('page-player').classList.add('active');
+    loadPlayer(h.slice(6));
+  } else if (h === '#admin') {
+    nav('admin');
+  } else {
+    nav('home');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  HOME
+// ═══════════════════════════════════════════════════════════
+async function loadHome() {
+  stopAudio();
+  const chk = await api('GET', '/api/admin/check');
+  const isAdmin = chk.is_admin;
+  document.getElementById('home-admin-tag').textContent = isAdmin ? '(Admin)' : '';
+  const stories = await api('GET', '/api/stories');
+  const grid = document.getElementById('story-grid');
+  if (!stories.length) {
+    grid.innerHTML = `<div class="empty-home">
+      <span class="em">📚</span><h3>No stories yet</h3>
+      <p style="margin-top:8px;font-size:.88rem">Ask the admin to upload a story!</p>
+    </div>`;
+    return;
+  }
+  grid.innerHTML = stories.map(s => `
+    <div class="story-card" onclick="nav('play','${s.id}')">
+      <div class="story-card-scenes">${s.scene_count} scenes</div>
+      ${isAdmin ? `<button class="story-card-del" onclick="event.stopPropagation();confirmDel('${s.id}','${s.title.replace(/'/g,"\\'")}',loadHome)" title="Delete story">🗑</button>` : ''}
+      <img class="story-card-thumb" src="/api/stories/${s.id}/image/hook"
+           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" alt="">
+      <div class="story-card-ph" style="display:none">📖</div>
+      <div class="story-card-body">
+        <div class="story-card-title">${s.title}</div>
+        <div class="story-card-meta">${fmtDate(s.created_at)}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  PLAYER — 12-slide model (intro + N scenes + outro)
+// ═══════════════════════════════════════════════════════════
+function buildSlides() {
+  const n = story.scenes.length;
+  const last = story.scenes[n - 1];
+  slides = [
+    {
+      type: 'intro', imageUrl: `/api/stories/${story.id}/image/hook`,
+      audioUrl: `/api/stories/${story.id}/audio/hook`,
+      text: story.hook || story.scenes[0].narration,
+      onScreenText: story.scenes[0].on_screen_text,
+      label: '🌟 Intro'
+    },
+    ...story.scenes.map((s, i) => ({
+      type: 'scene', imageUrl: `/api/stories/${story.id}/image/${s.index}`,
+      audioUrl: `/api/stories/${story.id}/audio/${s.index}`,
+      text: s.narration, onScreenText: s.on_screen_text,
+      label: `Scene ${i + 1} · ${s.title}`
+    })),
+    {
+      type: 'outro', imageUrl: `/api/stories/${story.id}/image/${last.index}`,
+      audioUrl: `/api/stories/${story.id}/audio/outro`,
+      text: story.outro || last.narration,
+      onScreenText: last.on_screen_text,
+      label: '🌈 The End'
+    }
+  ];
+}
+
+async function loadPlayer(storyId) {
+  stopAudio();
+  story = null; slides = []; slideIdx = 0;
+  document.getElementById('story-title-sm').textContent = 'Loading…';
+  document.getElementById('scene-img').src = '';
+  document.getElementById('moral-card').classList.remove('show');
+
+  const data = await api('GET', `/api/stories/${storyId}`);
+  if (data.error) { nav('home'); return; }
+  story = data;
+
+  buildSlides();
+
+  document.getElementById('story-title-sm').textContent = story.title;
+  document.getElementById('moral-text').textContent     = story.moral || '';
+  document.getElementById('scene-tot').textContent      = slides.length;
+
+  document.getElementById('pdots').innerHTML = slides.map((sl, i) =>
+    `<div class="pdot ${i===0?'active':''}" onclick="goToScene(${i})" title="${sl.label}"></div>`
+  ).join('');
+
+  goToScene(0, false); // load first slide but don't auto-play — wait for user
+}
+
+function goToScene(idx, autoPlay) {
+  if (!story || !slides.length) return;
+  slideIdx = Math.max(0, Math.min(idx, slides.length - 1));
+  const slide = slides[slideIdx];
+
+  const img = document.getElementById('scene-img');
+  img.style.opacity = '0';
+  img.src = slide.imageUrl;
+  img.onload = () => { img.style.opacity = '1'; };
+
+  document.getElementById('scene-num').textContent    = slideIdx + 1;
+  document.getElementById('cap-top-text').textContent = slide.onScreenText || '';
+  document.getElementById('sub-text').textContent     = slide.text || '';
+
+  document.querySelectorAll('.pdot').forEach((d, i) => {
+    d.classList.toggle('active', i === slideIdx);
+    d.classList.toggle('done',   i < slideIdx);
+  });
+
+  document.getElementById('prev-btn').disabled = slideIdx === 0;
+  document.getElementById('next-btn').disabled = slideIdx === slides.length - 1;
+  document.getElementById('moral-card').classList.remove('show'); // shown only after outro audio ends
+  applySubsVisibility();
+
+  // autoPlay defaults to true — always play on navigation
+  loadSlideAudio(slide.audioUrl, autoPlay !== false);
+}
+
+function loadSlideAudio(audioUrl, autoPlay) {
+  stopAudio();
+  const aud = new Audio(audioUrl);
+  sceneAudio = aud;
+  aud.playbackRate = speed;
+  // Guard every handler: if sceneAudio has changed (stale event), ignore it
+  aud.addEventListener('ended', () => {
+    if (sceneAudio !== aud) return;
+    onAudioEnded();
+  });
+  aud.addEventListener('play',  () => { if (sceneAudio === aud) { isPlaying = true;  updatePlayBtn(); } });
+  aud.addEventListener('pause', () => { if (sceneAudio === aud) { isPlaying = false; updatePlayBtn(); } });
+  aud.addEventListener('error', () => {
+    if (sceneAudio !== aud) return;
+    if (autoMode && slideIdx < slides.length - 1)
+      setTimeout(() => goToScene(slideIdx + 1), 1500);
+  });
+  if (autoPlay) aud.play().catch(() => {});
+}
+
+function onAudioEnded() {
+  isPlaying = false;
+  updatePlayBtn();
+  if (autoMode && slideIdx < slides.length - 1) {
+    setTimeout(() => goToScene(slideIdx + 1), 400);
+  } else if (slideIdx === slides.length - 1) {
+    document.getElementById('moral-card').classList.add('show');
+  }
+}
+
+function stopAudio() {
+  if (!sceneAudio) return;
+  const old = sceneAudio;
+  sceneAudio = null;  // null first — any stale events on 'old' will fail the guard check
+  old.pause();
+  old.src = '';
+  isPlaying = false;
+  updatePlayBtn();
+}
+
+// Controls — next/prev always auto-play
+function togglePlay() {
+  if (!sceneAudio) return;
+  if (isPlaying) sceneAudio.pause();
+  else sceneAudio.play().catch(() => {});
+}
+function prevScene() { if (slideIdx > 0) goToScene(slideIdx - 1, true); }
+function nextScene() { if (slideIdx < slides.length - 1) goToScene(slideIdx + 1, true); }
+
+function replayScene() {
+  if (!sceneAudio) return;
+  sceneAudio.currentTime = 0;
+  sceneAudio.play().catch(() => {});
+  const el = document.getElementById('sub-text');
+  el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+}
+
+function setMode(auto) {
+  autoMode = auto;
+  document.getElementById('auto-btn').classList.toggle('on',  auto);
+  document.getElementById('man-btn').classList.toggle('on', !auto);
+}
+
+function cycleSpeed() {
+  const i = SPEEDS.indexOf(speed);
+  speed = SPEEDS[(i + 1) % SPEEDS.length];
+  if (sceneAudio) sceneAudio.playbackRate = speed;
+  document.getElementById('spd-btn').textContent = speed + '×';
+}
+
+function toggleSubsBtn() {
+  subsOn = !subsOn;
+  document.getElementById('sub-btn').classList.toggle('off', !subsOn);
+  applySubsVisibility();
+}
+
+function applySubsVisibility() {
+  const op = subsOn ? '1' : '0';
+  document.getElementById('sub-overlay').style.opacity = op;
+  document.getElementById('cap-top').style.opacity     = op;
+}
+
+function updatePlayBtn() {
+  const btn = document.getElementById('play-btn');
+  if (btn) btn.textContent = isPlaying ? '⏸' : '▶';
+}
+
+document.addEventListener('keydown', e => {
+  if (!story) return;
+  if (['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
+  if (e.code === 'Space')      { e.preventDefault(); togglePlay(); }
+  if (e.code === 'ArrowRight') nextScene();
+  if (e.code === 'ArrowLeft')  prevScene();
+  if (e.code === 'KeyR')       replayScene();
+  if (e.code === 'KeyS')       toggleSubsBtn();
+});
+
+// ═══════════════════════════════════════════════════════════
+//  ADMIN
+// ═══════════════════════════════════════════════════════════
+async function checkAdmin() {
+  const r = await api('GET', '/api/admin/check');
+  r.is_admin ? showDash() : showLogin();
+}
+function showLogin() {
+  document.getElementById('login-card').style.display = 'block';
+  document.getElementById('admin-dash').style.display = 'none';
+  document.getElementById('logout-btn').style.display = 'none';
+}
+async function showDash() {
+  document.getElementById('login-card').style.display = 'none';
+  document.getElementById('admin-dash').style.display = 'block';
+  document.getElementById('logout-btn').style.display = '';
+  loadAdminList();
+}
+async function doLogin() {
+  const pw = document.getElementById('login-pw').value;
+  const r  = await api('POST', '/api/admin/login', { password: pw });
+  if (r.ok) showDash();
+  else document.getElementById('login-err').classList.add('show');
+}
+async function doLogout() {
+  await api('POST', '/api/admin/logout');
+  showLogin();
+  document.getElementById('login-pw').value = '';
+}
+async function loadAdminList() {
+  const stories = await api('GET', '/api/stories');
+  const list = document.getElementById('admin-story-list');
+  if (!stories.length) {
+    list.innerHTML = '<p style="opacity:.35;font-size:.88rem;padding:10px">No stories yet.</p>';
+    return;
+  }
+  list.innerHTML = stories.map(s => `
+    <div class="asr" data-id="${s.id}">
+      <span class="drag-h">⠿</span>
+      <img class="asr-thumb" src="/api/stories/${s.id}/image/hook"
+           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" alt="">
+      <div class="asr-ph" style="display:none">📖</div>
+      <div class="asr-info">
+        <div class="asr-title">${s.title}</div>
+        <div class="asr-meta">${s.scene_count} scenes · ${fmtDate(s.created_at)} · id: ${s.id}</div>
+      </div>
+      <div class="asr-acts">
+        <button class="btn btn-ghost btn-sm" onclick="nav('play','${s.id}')">▶ Preview</button>
+        <button class="btn btn-danger btn-sm" onclick="confirmDel('${s.id}','${s.title.replace(/'/g,"\\'")}')">🗑</button>
+      </div>
+    </div>`).join('');
+}
+
+const dz = document.getElementById('drop-zone');
+dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('dragover'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('dragover'); collectFiles([...e.dataTransfer.files]); });
+document.getElementById('file-in').addEventListener('change', e => collectFiles([...e.target.files]));
+
+function collectFiles(files) {
+  files.forEach(f => {
+    const n = f.name.toLowerCase();
+    if (n === 'story_config.json')               { pending.config = f; }
+    else if (n === 'hook.mp3')                   { pending.hook = f; }
+    else if (n === 'outro.mp3')                  { pending.outro = f; }
+    else if (n.match(/scene_\d+\.(png|jpe?g)$/i)) {
+      const idx = parseInt(n.match(/scene_(\d+)/i)[1]);
+      if (!pending.images) pending.images = {};
+      pending.images[idx] = f;
+    } else if (n.match(/scene_\d+\.mp3$/i)) {
+      const idx = parseInt(n.match(/scene_(\d+)/i)[1]);
+      if (!pending.audio) pending.audio = {};
+      pending.audio[idx] = f;
+    }
+  });
+  renderFileStatus();
+}
+
+function renderFileStatus() {
+  const imgCount = pending.images ? Object.keys(pending.images).length : 0;
+  const audCount = pending.audio  ? Object.keys(pending.audio).length  : 0;
+  const rows = [
+    { label:'story_config.json',           icon:'📋', found:!!pending.config, req:true  },
+    { label:`Scene images (${imgCount})`,  icon:'🖼️', found:imgCount > 0,    req:true  },
+    { label:`Scene audio (${audCount})`,   icon:'🎵', found:audCount > 0,    req:true  },
+    { label:'hook.mp3 (intro)',            icon:'🎙️', found:!!pending.hook,  req:false },
+    { label:'outro.mp3 (outro)',           icon:'🎙️', found:!!pending.outro, req:false },
+  ];
+  document.getElementById('file-status').innerHTML = rows.map(r => `
+    <div class="fs-row">
+      <span class="fs-icon">${r.icon}</span>
+      <span class="fs-name">${r.label}</span>
+      ${r.found ? `<span class="fs-ok">✓ Ready</span>`
+                : `<span class="${r.req?'fs-miss':'fs-opt'}">${r.req?'Required':'Optional'}</span>`}
+    </div>`).join('');
+  document.getElementById('upload-btn').disabled =
+    !(pending.config && imgCount > 0 && audCount > 0);
+}
+
+async function doUpload() {
+  const btn = document.getElementById('upload-btn');
+  const bar = document.getElementById('upload-bar-wrap');
+  const bf  = document.getElementById('upload-bar');
+  btn.disabled = true; btn.textContent = '⏳ Uploading…';
+  bar.style.display = 'block'; bf.style.width = '15%';
+  const fd = new FormData();
+  fd.append('config', pending.config);
+  Object.values(pending.images || {}).forEach(f => fd.append('images', f));
+  if (pending.hook)  fd.append('audio', pending.hook);
+  if (pending.outro) fd.append('audio', pending.outro);
+  Object.values(pending.audio || {}).forEach(f => fd.append('audio', f));
+  bf.style.width = '50%';
+  try {
+    const res  = await fetch('/api/admin/stories', { method:'POST', body:fd });
+    bf.style.width = '90%';
+    const data = await res.json();
+    if (res.ok) {
+      bf.style.width = '100%';
+      setTimeout(() => { bar.style.display='none'; bf.style.width='0%'; }, 500);
+      toast('✨ Uploaded: ' + data.title, 'ok');
+      Object.keys(pending).forEach(k => delete pending[k]);
+      document.getElementById('file-status').innerHTML = '';
+      document.getElementById('file-in').value = '';
+      loadAdminList();
+    } else { toast('❌ ' + (data.error || 'Upload failed'), 'err'); }
+  } catch { toast('❌ Network error', 'err'); }
+  finally {
+    btn.disabled = false; btn.textContent = '🚀 Upload Story';
+    bar.style.display = 'none'; bf.style.width = '0%';
+  }
+}
+
+let _delId = null, _delCallback = null;
+function confirmDel(id, title, callback) {
+  _delId = id;
+  _delCallback = callback || null;
+  document.getElementById('modal-title').textContent = 'Delete Story?';
+  document.getElementById('modal-body').textContent  = `"${title}" will be permanently removed.`;
+  document.getElementById('modal-ok').onclick = doDel;
+  document.getElementById('modal-bg').classList.add('show');
+}
+function closeModal() { document.getElementById('modal-bg').classList.remove('show'); }
+async function doDel() {
+  closeModal();
+  const r = await api('DELETE', `/api/admin/stories/${_delId}`);
+  if (r.ok) {
+    toast('🗑 Deleted', 'ok');
+    if (_delCallback) _delCallback(); else loadAdminList();
+  } else toast('❌ Failed', 'err');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  UTILITIES
+// ═══════════════════════════════════════════════════════════
+async function api(method, url, body) {
+  const opts = { method, headers:{} };
+  if (body) { opts.headers['Content-Type']='application/json'; opts.body=JSON.stringify(body); }
+  try { return await (await fetch(url, opts)).json(); } catch { return {}; }
+}
+const fmtDate = iso => { try { return new Date(iso).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); } catch { return ''; } };
+function toast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = `show ${type}`;
+  setTimeout(() => t.className = '', 3000);
+}
+
+routeHash();
+</script>
+</body>
+</html>
