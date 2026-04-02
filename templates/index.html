@@ -452,6 +452,7 @@ let subsOn    = true;
 let speed     = 1.0;
 let isPlaying = false;
 let sceneAudio = null;
+const audioCache = {}; // preloaded Audio objects keyed by audioUrl
 const SPEEDS  = [0.5, 0.75, 1, 1.25, 1.5, 2];
 const pending = {};
 
@@ -607,11 +608,23 @@ function goToScene(idx, autoPlay) {
   loadSlideAudio(slide.audioUrl, autoPlay !== false);
 }
 
+function preloadAudio(audioUrl) {
+  if (!audioCache[audioUrl]) {
+    const a = new Audio(audioUrl);
+    a.preload = 'auto';
+    audioCache[audioUrl] = a;
+  }
+}
+
 function loadSlideAudio(audioUrl, autoPlay) {
   stopAudio();
-  const aud = new Audio(audioUrl);
+  // Use preloaded audio if available (avoids redirect lag on CDN)
+  const aud = audioCache[audioUrl] || new Audio(audioUrl);
+  delete audioCache[audioUrl];
   sceneAudio = aud;
   aud.playbackRate = speed;
+  // Preload next slide's audio in the background
+  if (slideIdx + 1 < slides.length) preloadAudio(slides[slideIdx + 1].audioUrl);
   // Guard every handler: if sceneAudio has changed (stale event), ignore it
   aud.addEventListener('ended', () => {
     if (sceneAudio !== aud) return;
