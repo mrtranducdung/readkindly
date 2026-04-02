@@ -453,6 +453,7 @@ let speed     = 1.0;
 let isPlaying = false;
 let sceneAudio = null;
 const audioCache = {}; // preloaded Audio objects keyed by audioUrl
+const imageCache = {}; // preloaded Image objects keyed by imageUrl
 const SPEEDS  = [0.5, 0.75, 1, 1.25, 1.5, 2];
 const pending = {};
 
@@ -587,8 +588,22 @@ function goToScene(idx, autoPlay) {
 
   const img = document.getElementById('scene-img');
   img.style.opacity = '0';
-  img.src = slide.imageUrl;
+  if (imageCache[slide.imageUrl]) {
+    img.src = imageCache[slide.imageUrl].src;
+    delete imageCache[slide.imageUrl];
+  } else {
+    img.src = slide.imageUrl;
+  }
   img.onload = () => { img.style.opacity = '1'; };
+  // Preload next slide's image in the background
+  if (slideIdx + 1 < slides.length) {
+    const nextUrl = slides[slideIdx + 1].imageUrl;
+    if (!imageCache[nextUrl]) {
+      const preImg = new Image();
+      preImg.src = nextUrl;
+      imageCache[nextUrl] = preImg;
+    }
+  }
 
   document.getElementById('scene-num').textContent    = slideIdx + 1;
   document.getElementById('cap-top-text').textContent = slide.onScreenText || '';
