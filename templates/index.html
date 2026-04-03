@@ -112,8 +112,24 @@ body { font-family:'Nunito',system-ui,sans-serif; background:var(--bg); color:#f
 
 #scene-img {
   width:100%;height:100%;object-fit:cover;
-  transition:opacity .35s ease;
+  transition:opacity .4s ease, transform .4s ease;
   display:block;
+}
+#scene-img.entering {
+  opacity:0 !important;
+  transform:scale(1.04);
+}
+#img-frame.loading::after {
+  content:'';
+  position:absolute;inset:0;z-index:5;
+  background:linear-gradient(110deg,rgba(255,255,255,0) 30%,rgba(255,255,255,.08) 50%,rgba(255,255,255,0) 70%);
+  background-size:200% 100%;
+  animation:shimmer 1.2s infinite;
+  pointer-events:none;
+}
+@keyframes shimmer {
+  0%   { background-position:200% 0; }
+  100% { background-position:-200% 0; }
 }
 
 /* Top HUD — inside frame */
@@ -596,10 +612,12 @@ function goToScene(idx, autoPlay) {
   slideIdx = Math.max(0, Math.min(idx, slides.length - 1));
   const slide = slides[slideIdx];
 
-  const img = document.getElementById('scene-img');
-  img.style.opacity = '0';
-  img.src = slide.imageUrl;
-  img.onload = () => { img.style.opacity = '1'; };
+  const img    = document.getElementById('scene-img');
+  const frame  = document.getElementById('img-frame');
+
+  // Show shimmer while loading
+  img.classList.add('entering');
+  frame.classList.add('loading');
 
   document.getElementById('scene-num').textContent    = slideIdx + 1;
   document.getElementById('cap-top-text').textContent = slide.onScreenText || '';
@@ -612,18 +630,43 @@ function goToScene(idx, autoPlay) {
 
   document.getElementById('prev-btn').disabled = slideIdx === 0;
   document.getElementById('next-btn').disabled = slideIdx === slides.length - 1;
-  document.getElementById('moral-card').classList.remove('show'); // shown only after outro audio ends
+  document.getElementById('moral-card').classList.remove('show');
   applySubsVisibility();
 
-  // autoPlay defaults to true — always play on navigation
-  loadSlideAudio(slide.audioUrl, autoPlay !== false);
+  const shouldPlay = autoPlay !== false;
+  let imgReady = false, audReady = false, started = false;
+
+  // Fallback: start anyway after 3s even if something stalls
+  const fallback = setTimeout(() => { imgReady = true; audReady = true; tryStart(); }, 3000);
+
+  function tryStart() {
+    if (started || !imgReady || !audReady) return;
+    started = true;
+    clearTimeout(fallback);
+    frame.classList.remove('loading');
+    img.classList.remove('entering');
+    if (shouldPlay && sceneAudio) sceneAudio.play().catch(() => {});
+  }
+
+  // Load image
+  img.onload  = () => { imgReady = true; tryStart(); };
+  img.onerror = () => { imgReady = true; tryStart(); };
+  img.src = slide.imageUrl;
+
+  // Load audio (don't autoplay yet — tryStart controls that)
+  loadSlideAudio(slide.audioUrl, false, () => { audReady = true; tryStart(); });
 }
 
-function loadSlideAudio(audioUrl, autoPlay) {
+function loadSlideAudio(audioUrl, autoPlay, onReady) {
   stopAudio();
   const aud = new Audio(audioUrl);
   sceneAudio = aud;
   aud.playbackRate = speed;
+  if (onReady) {
+    aud.addEventListener('canplay', () => { if (sceneAudio === aud) onReady(); }, { once: true });
+    aud.addEventListener('error',   () => { if (sceneAudio === aud) onReady(); }, { once: true });
+    aud.load();
+  }
   // Guard every handler: if sceneAudio has changed (stale event), ignore it
   aud.addEventListener('ended', () => {
     if (sceneAudio !== aud) return;
@@ -636,7 +679,7 @@ function loadSlideAudio(audioUrl, autoPlay) {
     if (autoMode && slideIdx < slides.length - 1)
       setTimeout(() => goToScene(slideIdx + 1), 1500);
   });
-  if (autoPlay) aud.play().catch(() => {});
+  if (autoPlay && !onReady) aud.play().catch(() => {});
 }
 
 function onAudioEnded() {
