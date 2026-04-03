@@ -452,8 +452,7 @@ let subsOn    = true;
 let speed     = 1.0;
 let isPlaying = false;
 let sceneAudio = null;
-const audioCache = {}; // preloaded Audio objects keyed by audioUrl
-const imageCache = {}; // preloaded Image objects keyed by imageUrl
+let assetUrls = null; // direct CDN URLs fetched once on story load
 const SPEEDS  = [0.5, 0.75, 1, 1.25, 1.5, 2];
 const pending = {};
 
@@ -533,23 +532,29 @@ async function loadHome() {
 function buildSlides() {
   const n = story.scenes.length;
   const last = story.scenes[n - 1];
+  const u = assetUrls || {};
+  const imgUrl  = (key) => u.images?.[String(key)] ?? `/api/stories/${story.id}/image/${key}`;
+  const audUrl  = (key) => u.audio?.[String(key)]  ?? `/api/stories/${story.id}/audio/${key}`;
   slides = [
     {
-      type: 'intro', imageUrl: `/api/stories/${story.id}/image/hook`,
-      audioUrl: `/api/stories/${story.id}/audio/hook`,
+      type: 'intro',
+      imageUrl: u.hook_image ?? `/api/stories/${story.id}/image/hook`,
+      audioUrl: u.hook_audio ?? `/api/stories/${story.id}/audio/hook`,
       text: story.hook || story.scenes[0].narration,
       onScreenText: story.scenes[0].on_screen_text,
       label: '🌟 Intro'
     },
     ...story.scenes.map((s, i) => ({
-      type: 'scene', imageUrl: `/api/stories/${story.id}/image/${s.index}`,
-      audioUrl: `/api/stories/${story.id}/audio/${s.index}`,
+      type: 'scene',
+      imageUrl: imgUrl(s.index),
+      audioUrl: audUrl(s.index),
       text: s.narration, onScreenText: s.on_screen_text,
       label: `Scene ${i + 1} · ${s.title}`
     })),
     {
-      type: 'outro', imageUrl: `/api/stories/${story.id}/image/${last.index}`,
-      audioUrl: `/api/stories/${story.id}/audio/outro`,
+      type: 'outro',
+      imageUrl: imgUrl(last.index),
+      audioUrl: u.outro_audio ?? `/api/stories/${story.id}/audio/outro`,
       text: story.outro || last.narration,
       onScreenText: last.on_screen_text,
       label: '🌈 The End'
@@ -567,6 +572,11 @@ async function loadPlayer(storyId) {
   const data = await api('GET', `/api/stories/${storyId}`);
   if (data.error) { nav('home'); return; }
   story = data;
+
+  // Fetch direct CDN URLs once — eliminates redirect lag on every image/audio request
+  assetUrls = null;
+  const urls = await api('GET', `/api/stories/${storyId}/asset-urls`);
+  if (!urls.error) assetUrls = urls;
 
   buildSlides();
 
@@ -588,22 +598,8 @@ function goToScene(idx, autoPlay) {
 
   const img = document.getElementById('scene-img');
   img.style.opacity = '0';
-  if (imageCache[slide.imageUrl]) {
-    img.src = imageCache[slide.imageUrl].src;
-    delete imageCache[slide.imageUrl];
-  } else {
-    img.src = slide.imageUrl;
-  }
+  img.src = slide.imageUrl;
   img.onload = () => { img.style.opacity = '1'; };
-  // Preload next slide's image in the background
-  if (slideIdx + 1 < slides.length) {
-    const nextUrl = slides[slideIdx + 1].imageUrl;
-    if (!imageCache[nextUrl]) {
-      const preImg = new Image();
-      preImg.src = nextUrl;
-      imageCache[nextUrl] = preImg;
-    }
-  }
 
   document.getElementById('scene-num').textContent    = slideIdx + 1;
   document.getElementById('cap-top-text').textContent = slide.onScreenText || '';
@@ -623,23 +619,11 @@ function goToScene(idx, autoPlay) {
   loadSlideAudio(slide.audioUrl, autoPlay !== false);
 }
 
-function preloadAudio(audioUrl) {
-  if (!audioCache[audioUrl]) {
-    const a = new Audio(audioUrl);
-    a.preload = 'auto';
-    audioCache[audioUrl] = a;
-  }
-}
-
 function loadSlideAudio(audioUrl, autoPlay) {
   stopAudio();
-  // Use preloaded audio if available (avoids redirect lag on CDN)
-  const aud = audioCache[audioUrl] || new Audio(audioUrl);
-  delete audioCache[audioUrl];
+  const aud = new Audio(audioUrl);
   sceneAudio = aud;
   aud.playbackRate = speed;
-  // Preload next slide's audio in the background
-  if (slideIdx + 1 < slides.length) preloadAudio(slides[slideIdx + 1].audioUrl);
   // Guard every handler: if sceneAudio has changed (stale event), ignore it
   aud.addEventListener('ended', () => {
     if (sceneAudio !== aud) return;

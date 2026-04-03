@@ -235,6 +235,34 @@ def admin_check():
 
 # ── Public story API ──────────────────────────────────────────────────────────
 
+@app.route("/api/stories/<story_id>/asset-urls")
+def story_asset_urls(story_id):
+    """Return direct CDN URLs for all assets so the frontend skips redirect hops."""
+    config = db_get_config(story_id)
+    if not config:
+        return jsonify({"error": "Not found"}), 404
+    n = len(config.get("scenes", []))
+
+    def img_url(name):
+        if USE_SUPABASE:
+            return file_url(story_id, "images", name)
+        return f"/api/stories/{story_id}/image/{name.split('.')[0]}"
+
+    def aud_url(name):
+        if USE_SUPABASE:
+            return file_url(story_id, "audio", name)
+        key = name.replace(".mp3", "").replace("scene_", "")
+        return f"/api/stories/{story_id}/audio/{key}"
+
+    return jsonify({
+        "hook_image": img_url("hook.png"),
+        "hook_audio": aud_url("hook.mp3"),
+        "outro_audio": aud_url("outro.mp3"),
+        "images": {str(i): img_url(f"{i}.png") for i in range(1, n + 1)},
+        "audio":  {str(i): aud_url(f"scene_{i:02d}.mp3") for i in range(1, n + 1)},
+    })
+
+
 @app.route("/api/stories")
 def list_stories():
     return jsonify(db_list())
