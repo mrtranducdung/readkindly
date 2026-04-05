@@ -390,8 +390,8 @@ body { font-family:'Nunito',system-ui,sans-serif; background:var(--bg); color:#f
       <button class="ctrl-btn" onclick="replayScene()" title="Replay (R)">🔁</button>
       <div class="flex-gap"></div>
       <div id="mode-toggle">
-        <button class="mode-btn"    id="auto-btn" onclick="setMode(true)">Auto</button>
-        <button class="mode-btn on" id="man-btn"  onclick="setMode(false)">Manual</button>
+        <button class="mode-btn on" id="auto-btn" onclick="setMode(true)">Auto</button>
+        <button class="mode-btn"    id="man-btn"  onclick="setMode(false)">Manual</button>
       </div>
       <button id="spd-btn" class="ctrl-pill" onclick="cycleSpeed()">1×</button>
       <button id="sub-btn" class="ctrl-pill" onclick="toggleSubsBtn()" title="Subtitles (S)">💬</button>
@@ -463,7 +463,7 @@ body { font-family:'Nunito',system-ui,sans-serif; background:var(--bg); color:#f
 let story     = null;
 let slides    = [];
 let slideIdx  = 0;
-let autoMode  = false;
+let autoMode  = true;
 let subsOn    = true;
 let speed     = 1.0;
 let isPlaying = false;
@@ -758,6 +758,23 @@ document.addEventListener('keydown', e => {
   if (e.code === 'KeyR')       replayScene();
   if (e.code === 'KeyS')       toggleSubsBtn();
 });
+
+// ── Swipe to navigate (mobile) ────────────────────────────────────────────────
+(function () {
+  let startX = 0, startY = 0;
+  const frame = document.getElementById('img-frame');
+  frame.addEventListener('touchstart', e => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+  }, { passive: true });
+  frame.addEventListener('touchend', e => {
+    if (!story) return;
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = e.changedTouches[0].clientY - startY;
+    if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return; // too short or vertical scroll
+    if (dx < 0) nextScene(); else prevScene();
+  }, { passive: true });
+}());
 
 // ═══════════════════════════════════════════════════════════
 //  ADMIN
