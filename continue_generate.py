@@ -98,6 +98,19 @@ def main() -> int:
     else:
         print("\nSkipping TikTok upload (TIKTOK_ACCESS_TOKEN not set)")
 
+    # YouTube upload (requires youtube_token.json)
+    youtube_token = Path("youtube_token.json")
+    if youtube_token.exists():
+        print("\nUploading to YouTube...")
+        try:
+            from upload_to_youtube import upload_video
+            yt_result = upload_video(workdir)
+            print(f"✅ YouTube: {yt_result['url']}")
+        except Exception as e:
+            print(f"✗ YouTube upload failed: {e}")
+    else:
+        print("\nSkipping YouTube upload (run python youtube_auth.py first)")
+
     return 0
 
 
