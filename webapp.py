@@ -377,6 +377,23 @@ def reorder_stories():
 
 # ── Serve SPA ─────────────────────────────────────────────────────────────────
 
+@app.route("/tos")
+def tos():
+    return """<!DOCTYPE html><html><head><title>Terms of Service</title></head><body>
+<h1>Terms of Service</h1>
+<p>This app generates and publishes kids moral stories. By using this service you agree to use it responsibly and in compliance with applicable laws.</p>
+<p>We reserve the right to update these terms at any time. Last updated: 2026-04-07.</p>
+</body></html>"""
+
+@app.route("/privacy")
+def privacy():
+    return """<!DOCTYPE html><html><head><title>Privacy Policy</title></head><body>
+<h1>Privacy Policy</h1>
+<p>This app does not collect personal data from users. Story content is generated automatically and stored on our servers.</p>
+<p>We do not share any data with third parties except as required to operate the service.</p>
+<p>Last updated: 2026-04-07.</p>
+</body></html>"""
+
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")
 def serve_spa(path=""):
