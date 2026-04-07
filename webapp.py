@@ -377,23 +377,111 @@ def reorder_stories():
 
 # ── Serve SPA ─────────────────────────────────────────────────────────────────
 
+_LEGAL_STYLE = """
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="tiktok-developers-site-verification" content="WmoaEztuqNLmKpOmR8NyCvvPlsBdwA5d" />
+<style>
+  body{font-family:sans-serif;max-width:760px;margin:40px auto;padding:0 20px;color:#222;line-height:1.7}
+  h1{color:#333}h2{color:#444;margin-top:2em}
+  a{color:#555}footer{margin-top:3em;font-size:.85em;color:#888;border-top:1px solid #ddd;padding-top:1em}
+</style>
+"""
+
 @app.route("/tos")
 def tos():
-    return """<!DOCTYPE html><html><head><title>Terms of Service</title>
-<meta name="tiktok-developers-site-verification" content="WmoaEztuqNLmKpOmR8NyCvvPlsBdwA5d" />
-</head><body>
+    return f"""<!DOCTYPE html><html><head><title>Terms of Service – ReadKindly</title>{_LEGAL_STYLE}</head><body>
 <h1>Terms of Service</h1>
-<p>This app generates and publishes kids moral stories. By using this service you agree to use it responsibly and in compliance with applicable laws.</p>
-<p>We reserve the right to update these terms at any time. Last updated: 2026-04-07.</p>
+<p><strong>App name:</strong> ReadKindly &nbsp;|&nbsp; <strong>Last updated:</strong> April 7, 2026</p>
+
+<h2>1. Acceptance of Terms</h2>
+<p>By accessing or using ReadKindly ("the App", "we", "our"), you agree to be bound by these Terms of Service. If you do not agree, please do not use the App.</p>
+
+<h2>2. Description of Service</h2>
+<p>ReadKindly is a children's story platform that generates and publishes short animated moral stories for kids. Content is created automatically and made available for viewing through our website and partner platforms.</p>
+
+<h2>3. Permitted Use</h2>
+<p>You may use ReadKindly for personal, non-commercial viewing of story content. You agree not to:</p>
+<ul>
+  <li>Reproduce or redistribute content without permission</li>
+  <li>Attempt to reverse-engineer or interfere with the App</li>
+  <li>Use the App for any unlawful purpose</li>
+</ul>
+
+<h2>4. Content</h2>
+<p>All stories on ReadKindly are AI-generated and intended for children aged 3–10. We strive to ensure content is safe and appropriate. We reserve the right to remove or modify any content at any time.</p>
+
+<h2>5. Intellectual Property</h2>
+<p>All content, including story text, images, and audio, is owned by ReadKindly or its licensors. You may not copy or distribute it without written permission.</p>
+
+<h2>6. Disclaimer of Warranties</h2>
+<p>ReadKindly is provided "as is" without warranties of any kind. We do not guarantee uninterrupted or error-free access to the App.</p>
+
+<h2>7. Limitation of Liability</h2>
+<p>To the fullest extent permitted by law, ReadKindly shall not be liable for any indirect, incidental, or consequential damages arising from your use of the App.</p>
+
+<h2>8. Changes to Terms</h2>
+<p>We may update these Terms at any time. Continued use of ReadKindly after changes constitutes acceptance of the revised Terms.</p>
+
+<h2>9. Contact</h2>
+<p>For questions about these Terms, contact us at: <a href="mailto:support@readkindly.com">support@readkindly.com</a></p>
+
+<footer><a href="/">← Back to ReadKindly</a> &nbsp;|&nbsp; <a href="/privacy">Privacy Policy</a></footer>
 </body></html>"""
+
 
 @app.route("/privacy")
 def privacy():
-    return """<!DOCTYPE html><html><head><title>Privacy Policy</title></head><body>
+    return f"""<!DOCTYPE html><html><head><title>Privacy Policy – ReadKindly</title>{_LEGAL_STYLE}</head><body>
 <h1>Privacy Policy</h1>
-<p>This app does not collect personal data from users. Story content is generated automatically and stored on our servers.</p>
-<p>We do not share any data with third parties except as required to operate the service.</p>
-<p>Last updated: 2026-04-07.</p>
+<p><strong>App name:</strong> ReadKindly &nbsp;|&nbsp; <strong>Last updated:</strong> April 7, 2026</p>
+
+<h2>1. Introduction</h2>
+<p>ReadKindly ("the App", "we", "us", "our") is committed to protecting your privacy. This Privacy Policy explains how we handle information when you use the ReadKindly website and services.</p>
+
+<h2>2. Information We Collect</h2>
+<p>ReadKindly does <strong>not</strong> require users to create an account or provide personal information to view stories. We do not collect names, email addresses, or any personally identifiable information from general visitors.</p>
+<p>We may collect non-personal technical data such as:</p>
+<ul>
+  <li>Browser type and version</li>
+  <li>Device type and operating system</li>
+  <li>Pages viewed and time spent on the App (via anonymous analytics)</li>
+</ul>
+
+<h2>3. How We Use Information</h2>
+<p>Any technical data collected is used solely to:</p>
+<ul>
+  <li>Improve App performance and user experience</li>
+  <li>Diagnose technical issues</li>
+</ul>
+<p>We do not sell, rent, or share personal data with third parties for marketing purposes.</p>
+
+<h2>4. Children's Privacy</h2>
+<p>ReadKindly is designed for children and family audiences. We do not knowingly collect personal information from children under 13. If you believe a child has provided us personal information, please contact us and we will promptly delete it.</p>
+
+<h2>5. Cookies</h2>
+<p>ReadKindly uses only essential session cookies required for admin functionality. No tracking or advertising cookies are used.</p>
+
+<h2>6. Third-Party Services</h2>
+<p>ReadKindly may use the following third-party services to operate:</p>
+<ul>
+  <li><strong>Supabase</strong> – for data storage (subject to Supabase's privacy policy)</li>
+  <li><strong>Render</strong> – for web hosting (subject to Render's privacy policy)</li>
+</ul>
+<p>We do not control and are not responsible for the privacy practices of these third parties.</p>
+
+<h2>7. Data Retention</h2>
+<p>Story content is retained on our servers indefinitely unless removed by an administrator. No personal user data is retained.</p>
+
+<h2>8. Your Rights</h2>
+<p>Since we do not collect personal data from general users, there is no personal information to access, correct, or delete. If you have an admin account and wish to have it removed, contact us.</p>
+
+<h2>9. Changes to This Policy</h2>
+<p>We may update this Privacy Policy from time to time. We will post the updated policy on this page with a revised date.</p>
+
+<h2>10. Contact</h2>
+<p>If you have questions about this Privacy Policy, contact us at: <a href="mailto:support@readkindly.com">support@readkindly.com</a></p>
+
+<footer><a href="/">← Back to ReadKindly</a> &nbsp;|&nbsp; <a href="/tos">Terms of Service</a></footer>
 </body></html>"""
 
 @app.route("/", defaults={"path": ""})
