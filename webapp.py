@@ -379,7 +379,9 @@ def reorder_stories():
 
 @app.route("/tos")
 def tos():
-    return """<!DOCTYPE html><html><head><title>Terms of Service</title></head><body>
+    return """<!DOCTYPE html><html><head><title>Terms of Service</title>
+<meta name="tiktok-developers-site-verification" content="WmoaEztuqNLmKpOmR8NyCvvPlsBdwA5d" />
+</head><body>
 <h1>Terms of Service</h1>
 <p>This app generates and publishes kids moral stories. By using this service you agree to use it responsibly and in compliance with applicable laws.</p>
 <p>We reserve the right to update these terms at any time. Last updated: 2026-04-07.</p>
