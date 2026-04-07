@@ -14,6 +14,7 @@ from review_workflow import (
     run_config_path,
     save_review_state,
 )
+import upload_to_render
 
 
 def main() -> int:
@@ -59,6 +60,44 @@ def main() -> int:
             indent=2,
         )
     )
+
+    # Auto-upload to Render
+    render_url = os.getenv("RENDER_URL", "").rstrip("/")
+    admin_password = os.getenv("ADMIN_PASSWORD", "")
+    if render_url:
+        print(f"\nUploading to Render: {render_url} ...")
+        try:
+            session = upload_to_render.login(render_url, admin_password)
+            result_render = upload_to_render.upload_out(session, workdir, render_url)
+            print(f"✅ Published on Render: \"{result_render['title']}\" → ID: {result_render['id']}")
+            print(f"   Live at: {render_url}")
+        except Exception as e:
+            print(f"✗ Render upload failed: {e}")
+    else:
+        print("\nSkipping Render upload (RENDER_URL not set)")
+
+    # TikTok upload (requires TIKTOK_ACCESS_TOKEN)
+    tiktok_token = os.getenv("TIKTOK_ACCESS_TOKEN", "")
+    if tiktok_token:
+        print("\nUploading to TikTok ...")
+        try:
+            from genstory import TikTokAgent
+            tiktok = TikTokAgent(tiktok_token)
+            title = imported["title"]
+            hashtags = " ".join(config.get("hashtags", ["#kidsstories", "#storytime"]))
+            caption = f"{title} {hashtags}"
+            init = tiktok.init_direct_post(caption[:2200], video.video_path)
+            upload_url = init.get("data", {}).get("upload_url")
+            if upload_url:
+                tiktok.upload_binary(upload_url, video.video_path)
+                print(f"✅ Uploaded to TikTok: \"{title}\"")
+            else:
+                print(f"✗ TikTok upload error: no upload_url in response: {init}")
+        except Exception as e:
+            print(f"✗ TikTok upload failed: {e}")
+    else:
+        print("\nSkipping TikTok upload (TIKTOK_ACCESS_TOKEN not set)")
+
     return 0
 
 
