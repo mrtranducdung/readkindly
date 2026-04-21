@@ -83,7 +83,7 @@ body { font-family:'Nunito',system-ui,sans-serif; background:var(--bg); color:#f
 }
 .story-card-print {
   background:none;border:none;cursor:pointer;color:rgba(255,255,255,.55);
-  font-size:.75rem;padding:0;line-height:1;transition:color .2s;
+  font-size:.75rem;padding:5px 6px;margin:-5px -6px;line-height:1;transition:color .2s;
 }
 .story-card-print:hover { color:#fff; }
 .story-card-del {
@@ -1065,7 +1065,16 @@ async function printStory(storyId) {
   }
 </style>
 </head><body>${pages}
-<script>window.onload=()=>window.print();<\/script>
+<script>
+window.addEventListener('load', () => {
+  const imgs = Array.from(document.images);
+  const pending = imgs.filter(i => !i.complete);
+  if (!pending.length) { window.print(); return; }
+  let done = 0;
+  const finish = () => { if (++done >= pending.length) window.print(); };
+  pending.forEach(img => { img.addEventListener('load', finish); img.addEventListener('error', finish); });
+});
+<\/script>
 </body></html>`);
   win.document.close();
 }
