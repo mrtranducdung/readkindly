@@ -1006,23 +1006,33 @@ async function printStory(storyId) {
 
   const imgUrl = (key) => urls.images?.[String(key)] ?? `/api/stories/${storyId}/image/${key}`;
   const hookImg = urls.hook_image ?? `/api/stories/${storyId}/image/hook`;
+  const last = cfg.scenes[cfg.scenes.length - 1];
+
+  // Group scenes into pairs for 2-per-page layout
+  const pairs = [];
+  for (let i = 0; i < cfg.scenes.length; i += 2) pairs.push(cfg.scenes.slice(i, i + 2));
+
+  const sceneSlot = s => `
+    <div class="slot">
+      <img src="${imgUrl(s.index)}" alt="${s.title}">
+      <p class="narration">${s.narration}</p>
+    </div>`;
 
   const pages = [
-    // Cover page
+    // Cover
     `<div class="page cover">
       <img src="${hookImg}" alt="cover">
       <h1>${cfg.title}</h1>
       <p class="hook">${cfg.hook || ''}</p>
     </div>`,
-    // Scene pages
-    ...cfg.scenes.map(s => `
-    <div class="page scene">
-      <img src="${imgUrl(s.index)}" alt="${s.title}">
-      <p class="narration">${s.narration}</p>
+    // 2 scenes per page
+    ...pairs.map(pair => `
+    <div class="page scenes">
+      ${pair.map(sceneSlot).join('')}
     </div>`),
-    // Moral page
+    // Moral
     `<div class="page moral">
-      <img src="${imgUrl(cfg.scenes[cfg.scenes.length - 1].index)}" alt="ending">
+      <img src="${imgUrl(last.index)}" alt="ending">
       <div class="moral-box">
         <div class="moral-label">💡 Today's Lesson</div>
         <p>${cfg.moral}</p>
@@ -1036,33 +1046,49 @@ async function printStory(storyId) {
 <title>${cfg.title}</title>
 <style>
   * { box-sizing:border-box; margin:0; padding:0; }
-  body { font-family: 'Georgia', serif; background:#fff; color:#222; }
+  body { font-family:'Georgia',serif; background:#fff; color:#222; }
+
+  @page { size:A4 portrait; margin:12mm; }
+
   .page {
-    width:100%; max-width:540px; margin:0 auto;
-    padding:28px 24px 20px;
+    width:100%; height:267mm; /* A4 297mm - 2×12mm margins - 6mm breathing room */
     page-break-after:always;
-    display:flex; flex-direction:column; align-items:center; gap:16px;
+    display:flex; flex-direction:column;
   }
   .page:last-child { page-break-after:auto; }
-  .page img {
-    width:100%; max-height:420px; object-fit:cover;
-    border-radius:12px; display:block;
+
+  /* ── Cover ── */
+  .cover { align-items:center; justify-content:center; gap:14px; padding:8mm 0; }
+  .cover img { width:auto; max-width:55%; max-height:160mm; object-fit:contain; border-radius:10px; }
+  .cover h1 { font-size:1.7rem; font-weight:700; text-align:center; line-height:1.3; }
+  .cover .hook { font-size:1rem; text-align:center; color:#555; font-style:italic; max-width:80%; }
+
+  /* ── 2-per-page scenes ── */
+  .scenes { gap:6mm; }
+  .slot {
+    flex:1; display:flex; flex-direction:column;
+    border:1px solid #e8e8e8; border-radius:10px; overflow:hidden;
+    min-height:0; /* allow shrinking */
   }
-  .cover img { max-height:360px; }
-  .cover h1 { font-size:1.6rem; font-weight:700; text-align:center; line-height:1.3; }
-  .cover .hook { font-size:1rem; text-align:center; color:#555; font-style:italic; }
-  .narration { font-size:1.05rem; line-height:1.7; text-align:center; color:#333; }
+  .slot img {
+    width:100%; flex:1; object-fit:cover; display:block; min-height:0;
+  }
+  .narration {
+    flex-shrink:0; padding:5px 10px 6px;
+    font-size:.82rem; line-height:1.55; text-align:center; color:#333;
+    border-top:1px solid #f0f0f0;
+  }
+
+  /* ── Moral ── */
+  .moral { align-items:center; justify-content:center; gap:14px; padding:8mm 0; }
+  .moral img { width:auto; max-width:55%; max-height:150mm; object-fit:contain; border-radius:10px; }
   .moral-box {
-    width:100%; border:2px solid #f5a623; border-radius:12px;
-    padding:16px 20px; text-align:center; background:#fffbf0;
+    width:90%; border:2px solid #f5a623; border-radius:12px;
+    padding:14px 20px; text-align:center; background:#fffbf0;
   }
-  .moral-label { font-size:.75rem; font-weight:700; letter-spacing:1.5px;
+  .moral-label { font-size:.7rem; font-weight:700; letter-spacing:1.5px;
                  text-transform:uppercase; color:#f5a623; margin-bottom:8px; }
-  .moral-box p { font-size:1.05rem; line-height:1.6; color:#333; }
-  @media print {
-    @page { margin:12mm; }
-    .page { padding:0; max-width:100%; }
-  }
+  .moral-box p { font-size:1rem; line-height:1.6; color:#333; }
 </style>
 </head><body>${pages}
 <script>
