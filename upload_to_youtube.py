@@ -38,18 +38,48 @@ def upload_video(workdir: Path) -> dict:
     config = json.loads(config_path.read_text())
     title = config.get("title", "Kids Story")
     moral = config.get("moral", "")
-    hashtags = " ".join(config.get("hashtags", ["#kidsstories", "#storytime"]))
-    description = f"{moral}\n\n{hashtags}\n\n#kids #storytime #moral #animation"
+    hook = config.get("hook", "")
+    story_hashtags = config.get("hashtags", ["#kidsstories", "#storytime"])
+
+    # SEO-optimised title
+    yt_title = f"{title} | Kids Moral Story | Bedtime Story for Children"
+
+    # Viral hashtags shown above title (YouTube picks first 3 from description)
+    viral_tags = [
+        "#KidsStories", "#BedtimeStory", "#MoralStory",
+        "#KidsAnimation", "#StorytimeForKids", "#ChildrensStories",
+        "#AnimatedStory", "#KidsLearning", "#GoodHabits", "#FamilyFriendly",
+    ]
+    story_specific = " ".join(story_hashtags)
+    viral_block = " ".join(viral_tags)
+
+    description = (
+        f"{hook}\n\n"
+        f"{title} — {moral}\n\n"
+        f"Watch more fun and heartwarming kids stories on our channel! "
+        f"Every story teaches a positive lesson for children aged 3-10.\n\n"
+        f"{story_specific} {viral_block}"
+    )
+
+    # Tags: story-specific + broad searchable terms
+    base_tags = [
+        "kids stories", "bedtime story", "moral story for kids",
+        "animated story", "children story", "kids animation",
+        "storytime", "good habits", "family friendly", "kids learning",
+        "moral tales", "short stories for kids", "kids cartoon story",
+    ]
+    story_tags = [t.lstrip("#") for t in story_hashtags]
+    all_tags = story_tags + base_tags
 
     creds = get_credentials()
     youtube = build("youtube", "v3", credentials=creds)
 
-    print(f"Uploading \"{title}\" to YouTube...")
+    print(f"Uploading \"{yt_title}\" to YouTube...")
     body = {
         "snippet": {
-            "title": title,
+            "title": yt_title,
             "description": description,
-            "tags": [t.lstrip("#") for t in config.get("hashtags", [])],
+            "tags": all_tags,
             "categoryId": "1",  # Film & Animation
         },
         "status": {
@@ -68,15 +98,18 @@ def upload_video(workdir: Path) -> dict:
             print(f"  Uploading... {int(status.progress() * 100)}%")
 
     video_id = response["id"]
-    print(f"✅ Uploaded: https://www.youtube.com/watch?v={video_id}")
+    print(f"✅ Uploaded: https://www.youtube.com/watch?v={video_id} — \"{yt_title}\"")
 
-    # Upload thumbnail if available
+    # Upload thumbnail if available (requires verified channel)
     if thumb_path.exists():
-        youtube.thumbnails().set(
-            videoId=video_id,
-            media_body=MediaFileUpload(str(thumb_path), mimetype="image/jpeg")
-        ).execute()
-        print("✅ Thumbnail uploaded")
+        try:
+            youtube.thumbnails().set(
+                videoId=video_id,
+                media_body=MediaFileUpload(str(thumb_path), mimetype="image/jpeg")
+            ).execute()
+            print("✅ Thumbnail uploaded")
+        except Exception as e:
+            print(f"⚠️  Thumbnail skipped (channel not verified): {e}")
 
     return {"video_id": video_id, "title": title, "url": f"https://www.youtube.com/watch?v={video_id}"}
 

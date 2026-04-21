@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import json
 import os
 from pathlib import Path
@@ -18,11 +19,18 @@ import upload_to_render
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--workdir", default="", help="Specific run workdir (default: latest images_ready)")
+    args = parser.parse_args()
+
     project_root = Path(__file__).resolve().parent
     os.chdir(project_root)
     _load_env()
 
-    workdir = find_latest_reviewable_run({"images_ready"})
+    if args.workdir:
+        workdir = Path(args.workdir).resolve()
+    else:
+        workdir = find_latest_reviewable_run({"images_ready"})
     state = load_review_state(workdir)
     config = json.loads(run_config_path(workdir).read_text(encoding="utf-8"))
     story = load_story_for_workdir(workdir)

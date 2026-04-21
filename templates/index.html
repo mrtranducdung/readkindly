@@ -329,6 +329,44 @@ body { font-family:'Nunito',system-ui,sans-serif; background:var(--bg); color:#f
 @media(max-width:700px) {
   .story-grid { grid-template-columns:repeat(auto-fill,minmax(155px,1fr));padding:14px; }
 }
+
+/* ══ REVIEW QUEUE ══ */
+.rq-card {
+  background:var(--card);border:1px solid rgba(139,92,246,.35);border-radius:20px;
+  padding:18px 20px;margin-bottom:18px;position:relative;
+}
+.rq-header { display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;gap:12px; }
+.rq-title  { font-weight:900;font-size:1rem; }
+.rq-meta   { font-size:.72rem;opacity:.4;margin-top:3px; }
+.rq-moral  { font-size:.78rem;color:#a78bfa;margin-top:4px;font-style:italic; }
+.rq-strip-wrap { overflow-x:auto;padding-bottom:8px;margin-bottom:14px; }
+.rq-strip  { display:flex;gap:8px;width:max-content; }
+.rq-thumb-box { position:relative;flex-shrink:0;cursor:pointer; }
+.rq-thumb  { width:54px;height:96px;border-radius:8px;object-fit:cover;display:block;
+             border:2px solid transparent;transition:border-color .2s; }
+.rq-thumb:hover { border-color:var(--purple); }
+.rq-thumb.stale { opacity:.45;border-color:var(--orange)!important; }
+.rq-thumb-label { text-align:center;font-size:.55rem;opacity:.45;margin-top:2px; }
+.rq-actions { display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end; }
+.rq-regen-form { display:flex;gap:6px;align-items:center;flex-wrap:wrap; }
+.rq-regen-form input {
+  padding:7px 10px;background:rgba(255,255,255,.07);border:1px solid var(--border);
+  border-radius:10px;color:#fff;font-family:inherit;font-size:.8rem;
+}
+.rq-regen-form input[type=number] { width:62px; }
+.rq-regen-form input[type=text]   { width:180px; }
+.rq-status {
+  position:absolute;inset:0;border-radius:20px;
+  background:rgba(12,10,30,.82);backdrop-filter:blur(6px);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:10px;z-index:5;display:none;
+}
+.rq-status.show { display:flex; }
+.rq-spinner { width:36px;height:36px;border:3px solid rgba(255,255,255,.15);
+              border-top-color:var(--purple);border-radius:50%;animation:spin .8s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.rq-status-msg { font-size:.85rem;font-weight:700;opacity:.7; }
+.rq-empty { text-align:center;padding:28px 20px;opacity:.35;font-size:.88rem; }
 </style>
 </head>
 <body>
@@ -421,6 +459,10 @@ body { font-family:'Nunito',system-ui,sans-serif; background:var(--bg); color:#f
   </div>
   <div id="admin-dash" class="admin-wrap" style="display:none">
     <h2>📋 Admin Dashboard</h2>
+
+    <h2 style="margin-bottom:14px">🔍 Review Queue</h2>
+    <div id="review-queue"><div class="rq-empty">Loading queue…</div></div>
+
     <div class="upload-card">
       <h3>⬆ Upload New Story</h3>
       <div id="drop-zone" onclick="document.getElementById('file-in').click()">
@@ -792,6 +834,7 @@ async function showDash() {
   document.getElementById('login-card').style.display = 'none';
   document.getElementById('admin-dash').style.display = 'block';
   document.getElementById('logout-btn').style.display = '';
+  loadReviewQueue();
   loadAdminList();
 }
 async function doLogin() {
@@ -943,6 +986,111 @@ function toast(msg, type) {
 }
 
 routeHash();
+
+// ═══════════════════════════════════════════════════════════
+//  REVIEW QUEUE
+// ═══════════════════════════════════════════════════════════
+const _pollTimers = {};
+
+async function loadReviewQueue() {
+  const runs = await api('GET', '/api/admin/review/runs');
+  const el = document.getElementById('review-queue');
+  if (!runs || runs.error || !runs.length) {
+    el.innerHTML = '<div class="rq-empty">No stories pending review.</div>';
+    return;
+  }
+  el.innerHTML = runs.map(r => renderReviewCard(r)).join('');
+}
+
+function renderReviewCard(run) {
+  const imgSrcs = [
+    `<div class="rq-thumb-box"><img class="rq-thumb" src="/api/admin/review/${run.run_id}/image/hook.png" alt="hook"><div class="rq-thumb-label">Hook</div></div>`,
+    ...Array.from({length: run.scene_count}, (_, i) => {
+      const n = String(i + 1).padStart(2, '0');
+      return `<div class="rq-thumb-box"><img class="rq-thumb" id="rq-img-${run.run_id}-${i+1}"
+        src="/api/admin/review/${run.run_id}/image/scene_${n}.png" alt="scene ${i+1}">
+        <div class="rq-thumb-label">S${i+1}</div></div>`;
+    })
+  ].join('');
+
+  return `
+  <div class="rq-card" id="rq-card-${run.run_id}">
+    <div class="rq-status" id="rq-status-${run.run_id}">
+      <div class="rq-spinner"></div>
+      <div class="rq-status-msg" id="rq-status-msg-${run.run_id}">Processing…</div>
+    </div>
+    <div class="rq-header">
+      <div>
+        <div class="rq-title">${run.title}</div>
+        <div class="rq-meta">${fmtDate(run.created_at)} · ${run.scene_count} scenes</div>
+        <div class="rq-moral">💡 ${run.moral || ''}</div>
+      </div>
+    </div>
+    <div class="rq-strip-wrap"><div class="rq-strip">${imgSrcs}</div></div>
+    <div class="rq-actions">
+      <button class="btn btn-primary btn-sm" onclick="approveRun('${run.run_id}')">✅ Approve &amp; Publish</button>
+      <div class="rq-regen-form">
+        <input type="number" id="rq-scene-${run.run_id}" min="1" max="${run.scene_count}" placeholder="Scene #" title="Scene number to regenerate">
+        <input type="text"   id="rq-guide-${run.run_id}" placeholder="Optional guidance…" title="Extra prompt guidance">
+        <button class="btn btn-ghost btn-sm" onclick="regenScene('${run.run_id}')">🔄 Regenerate</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+async function approveRun(runId) {
+  showRqStatus(runId, 'Generating audio + video… (may take 2–3 min)');
+  const r = await api('POST', `/api/admin/review/${runId}/approve`);
+  if (r.error) { hideRqStatus(runId); toast('❌ ' + r.error, 'err'); return; }
+  pollJob(r.job_id, runId, () => {
+    hideRqStatus(runId);
+    document.getElementById(`rq-card-${runId}`)?.remove();
+    const el = document.getElementById('review-queue');
+    if (!el.querySelector('.rq-card')) el.innerHTML = '<div class="rq-empty">No stories pending review.</div>';
+    loadAdminList();
+    toast('🎉 Published!', 'ok');
+  });
+}
+
+async function regenScene(runId) {
+  const sceneEl = document.getElementById(`rq-scene-${runId}`);
+  const guideEl = document.getElementById(`rq-guide-${runId}`);
+  const sceneN = parseInt(sceneEl.value);
+  if (!sceneN || sceneN < 1) { toast('Enter a valid scene number', 'err'); return; }
+  const guidance = guideEl.value.trim();
+  showRqStatus(runId, `Regenerating scene ${sceneN}…`);
+  const r = await api('POST', `/api/admin/review/${runId}/regenerate`, { scene: sceneN, guidance });
+  if (r.error) { hideRqStatus(runId); toast('❌ ' + r.error, 'err'); return; }
+  pollJob(r.job_id, runId, () => {
+    hideRqStatus(runId);
+    // Bust cache on the regenerated image
+    const img = document.getElementById(`rq-img-${runId}-${sceneN}`);
+    if (img) { const n = String(sceneN).padStart(2,'0'); img.src = `/api/admin/review/${runId}/image/scene_${n}.png?t=${Date.now()}`; img.classList.add('stale'); setTimeout(() => img.classList.remove('stale'), 800); }
+    sceneEl.value = ''; guideEl.value = '';
+    toast(`✅ Scene ${sceneN} regenerated`, 'ok');
+  });
+}
+
+function pollJob(jobId, runId, onDone) {
+  if (_pollTimers[jobId]) clearInterval(_pollTimers[jobId]);
+  _pollTimers[jobId] = setInterval(async () => {
+    const s = await api('GET', `/api/admin/review/jobs/${jobId}`);
+    if (!s || s.status === 'running') return;
+    clearInterval(_pollTimers[jobId]);
+    delete _pollTimers[jobId];
+    if (s.status === 'done') onDone();
+    else { hideRqStatus(runId); toast('❌ Job failed — check server logs', 'err'); }
+  }, 4000);
+}
+
+function showRqStatus(runId, msg) {
+  const el = document.getElementById(`rq-status-${runId}`);
+  const msgEl = document.getElementById(`rq-status-msg-${runId}`);
+  if (el) { el.classList.add('show'); if (msgEl) msgEl.textContent = msg; }
+}
+function hideRqStatus(runId) {
+  document.getElementById(`rq-status-${runId}`)?.classList.remove('show');
+}
 </script>
 <footer style="text-align:center;padding:18px 0 12px;font-size:12px;color:#aaa;border-top:1px solid #222;margin-top:24px;">
   <a href="/tos" style="color:#aaa;text-decoration:none;margin:0 10px;">Terms of Service</a>

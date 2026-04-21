@@ -9,6 +9,8 @@ import json
 import os
 import re
 import shutil
+import subprocess
+import threading
 import uuid
 from datetime import datetime
 from functools import wraps
@@ -150,6 +152,67 @@ def db_reorder(order):
 
 
 init_db()
+
+
+# ── Review-queue helpers ──────────────────────────────────────────────────────
+
+_OUT_DIR = Path(__file__).parent.resolve() / "out"
+_PYTHON_BIN = "/home/dung/anaconda3/envs/demo/bin/python"
+_BASE_DIR = Path(__file__).parent.resolve()
+_RUN_ID_RE = re.compile(r"^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}$")
+_jobs: dict = {}
+_jobs_lock = threading.Lock()
+
+
+def _scan_pending_runs() -> list:
+    runs = []
+    if not _OUT_DIR.exists():
+        return runs
+    for d in sorted(_OUT_DIR.iterdir(), reverse=True):
+        if not d.is_dir() or not _RUN_ID_RE.match(d.name):
+            continue
+        sf = d / "review_state.json"
+        if not sf.exists():
+            continue
+        try:
+            state = json.loads(sf.read_text())
+            if state.get("status") != "images_ready":
+                continue
+            cfg_file = d / "story_config.json"
+            cfg = json.loads(cfg_file.read_text()) if cfg_file.exists() else {}
+            scenes_info = [
+                {"index": s["index"], "title": s.get("title", ""), "on_screen_text": s.get("on_screen_text", "")}
+                for s in cfg.get("scenes", [])
+            ]
+            runs.append({
+                "run_id": d.name,
+                "title": state.get("title") or cfg.get("title", "Untitled"),
+                "moral": cfg.get("moral", ""),
+                "created_at": state.get("updated_at", ""),
+                "scene_count": state.get("scene_count", 10),
+                "scenes_info": scenes_info,
+            })
+        except Exception:
+            continue
+    return runs
+
+
+def _run_job(job_id: str, cmd: list) -> None:
+    env = os.environ.copy()
+    env["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+    with _jobs_lock:
+        _jobs[job_id] = {"status": "running", "output": "", "error": ""}
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, env=env)
+        with _jobs_lock:
+            _jobs[job_id] = {
+                "status": "done" if proc.returncode == 0 else "error",
+                "output": (proc.stdout or "")[-4000:],
+                "error": (proc.stderr or "")[-2000:],
+            }
+    except Exception as exc:
+        with _jobs_lock:
+            _jobs[job_id] = {"status": "error", "output": "", "error": str(exc)}
 
 
 # ── Storage helpers ───────────────────────────────────────────────────────────
@@ -373,6 +436,73 @@ def delete_story(story_id):
 def reorder_stories():
     db_reorder(request.get_json().get("order", []))
     return jsonify({"ok": True})
+
+
+# ── Admin review queue ────────────────────────────────────────────────────────
+
+@app.route("/api/admin/review/runs")
+@admin_required
+def list_review_runs():
+    return jsonify(_scan_pending_runs())
+
+
+@app.route("/api/admin/review/<run_id>/image/<filename>")
+@admin_required
+def serve_review_image(run_id, filename):
+    if not _RUN_ID_RE.match(run_id):
+        return jsonify({"error": "Invalid run_id"}), 400
+    if not re.match(r"^(hook|scene_\d{2})\.png$", filename):
+        return jsonify({"error": "Invalid filename"}), 400
+    img_path = _OUT_DIR / run_id / "images" / filename
+    if not img_path.exists():
+        return jsonify({"error": "Not found"}), 404
+    return send_file(img_path, mimetype="image/png")
+
+
+@app.route("/api/admin/review/<run_id>/approve", methods=["POST"])
+@admin_required
+def approve_run(run_id):
+    if not _RUN_ID_RE.match(run_id):
+        return jsonify({"error": "Invalid run_id"}), 400
+    workdir = _OUT_DIR / run_id
+    if not (workdir / "review_state.json").exists():
+        return jsonify({"error": "Run not found"}), 404
+    job_id = str(uuid.uuid4())[:8]
+    cmd = [_PYTHON_BIN, str(_BASE_DIR / "continue_generate.py"), "--workdir", str(workdir)]
+    threading.Thread(target=_run_job, args=(job_id, cmd), daemon=True).start()
+    return jsonify({"job_id": job_id})
+
+
+@app.route("/api/admin/review/<run_id>/regenerate", methods=["POST"])
+@admin_required
+def regenerate_scene_route(run_id):
+    if not _RUN_ID_RE.match(run_id):
+        return jsonify({"error": "Invalid run_id"}), 400
+    workdir = _OUT_DIR / run_id
+    if not (workdir / "review_state.json").exists():
+        return jsonify({"error": "Run not found"}), 404
+    data = request.get_json() or {}
+    scene_n = str(data.get("scene", "")).strip()
+    if not scene_n.isdigit():
+        return jsonify({"error": "scene number required"}), 400
+    guidance = str(data.get("guidance", "")).strip()
+    job_id = str(uuid.uuid4())[:8]
+    cmd = [_PYTHON_BIN, str(_BASE_DIR / "regenerate_scene.py"),
+           "--workdir", str(workdir), scene_n]
+    if guidance:
+        cmd.extend(guidance.split())
+    threading.Thread(target=_run_job, args=(job_id, cmd), daemon=True).start()
+    return jsonify({"job_id": job_id})
+
+
+@app.route("/api/admin/review/jobs/<job_id>")
+@admin_required
+def get_job_status(job_id):
+    with _jobs_lock:
+        job = _jobs.get(job_id)
+    if not job:
+        return jsonify({"error": "not found"}), 404
+    return jsonify(job)
 
 
 # ── Serve SPA ─────────────────────────────────────────────────────────────────

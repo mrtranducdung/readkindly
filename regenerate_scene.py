@@ -20,6 +20,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("extra_prompt", nargs="*", help="Extra prompt guidance to append")
     parser.add_argument("--ip-scale", type=float, default=0.6, help="IP-Adapter influence scale (0.0=text only, 0.6=default)")
     parser.add_argument("--reference", type=str, default=None, help="Path to a custom reference image (overrides hook.png)")
+    parser.add_argument("--workdir", default="", help="Specific run workdir (default: latest images_ready)")
     return parser.parse_args()
 
 
@@ -29,7 +30,10 @@ def main() -> int:
     os.chdir(project_root)
     _load_env()
 
-    workdir = find_latest_reviewable_run({"images_ready"})
+    if args.workdir:
+        workdir = Path(args.workdir).resolve()
+    else:
+        workdir = find_latest_reviewable_run({"images_ready"})
     config_path = run_config_path(workdir)
     config = json.loads(config_path.read_text(encoding="utf-8"))
     extra_prompt = " ".join(args.extra_prompt).strip()

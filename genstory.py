@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 import json
 import os
+import random
 import subprocess
 import requests
 
@@ -735,7 +736,11 @@ class MoralStoryPipeline:
         self.prompt_agent = PromptConsistencyAgent()
         self.image_agent = ImageAgent(self.workdir / "images", reference_image_path or None)
         elevenlabs_key = os.getenv("ELEVENLABS_API_KEY", "")
-        elevenlabs_voice = os.getenv("ELEVENLABS_VOICE_ID", "")
+        _voices = [v.strip() for v in os.getenv("ELEVENLABS_VOICE_IDS", "").split(",") if v.strip()]
+        if not _voices:
+            _voices = [v.strip() for v in os.getenv("ELEVENLABS_VOICE_ID", "").split(",") if v.strip()]
+        elevenlabs_voice = random.choice(_voices) if _voices else ""
+        print(f"Voice: {elevenlabs_voice}")
         self.narration_agent = NarrationAgent(self.workdir / "audio", elevenlabs_key, elevenlabs_voice)
         self.video_agent = VideoAgent(self.workdir / "video")
         self.qa_agent = QAAgent()
