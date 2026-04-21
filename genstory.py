@@ -163,18 +163,28 @@ class StoryAgent(Agent):
         )
 
 
+# Appended to every scene prompt so FLUX leaves a calm strip at the bottom for subtitles.
+_SUBTITLE_SAFE = "bottom eighth of image is calm plain background with no characters or objects, clear space for subtitle text"
+
+
 class PromptConsistencyAgent(Agent):
     def __init__(self):
         super().__init__("prompt_consistency_agent")
 
     def run(self, story: StoryPackage) -> StoryPackage:
-        if not story.character_consistency_prompt:
-            return story
         for scene in story.scenes:
-            if story.character_consistency_prompt not in scene.image_prompt:
-                scene.image_prompt = f"{scene.image_prompt}, {story.character_consistency_prompt}"
-        if story.character_consistency_prompt not in story.hook_image_prompt:
-            story.hook_image_prompt = f"{story.hook_image_prompt}, {story.character_consistency_prompt}"
+            p = scene.image_prompt
+            if story.character_consistency_prompt and story.character_consistency_prompt not in p:
+                p = f"{p}, {story.character_consistency_prompt}"
+            if _SUBTITLE_SAFE not in p:
+                p = f"{p}, {_SUBTITLE_SAFE}"
+            scene.image_prompt = p
+        p = story.hook_image_prompt
+        if story.character_consistency_prompt and story.character_consistency_prompt not in p:
+            p = f"{p}, {story.character_consistency_prompt}"
+        if _SUBTITLE_SAFE not in p:
+            p = f"{p}, {_SUBTITLE_SAFE}"
+        story.hook_image_prompt = p
         return story
 
 
@@ -314,6 +324,8 @@ class ImageAgent(Agent):
         prompt = scene.image_prompt
         if extra_prompt and extra_prompt not in prompt:
             prompt = f"{prompt}, {extra_prompt}"
+        if _SUBTITLE_SAFE not in prompt:
+            prompt = f"{prompt}, {_SUBTITLE_SAFE}"
 
         # Prefer per-character refs over hook.png if they exist
         char_refs = self._load_char_refs_from_disk()

@@ -79,7 +79,13 @@ body { font-family:'Nunito',system-ui,sans-serif; background:var(--bg); color:#f
 .story-card-scenes {
   position:absolute;top:10px;left:10px;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);
   border-radius:20px;padding:3px 10px;font-size:.66rem;font-weight:800;color:var(--yellow);
+  display:flex;align-items:center;gap:6px;
 }
+.story-card-print {
+  background:none;border:none;cursor:pointer;color:rgba(255,255,255,.55);
+  font-size:.75rem;padding:0;line-height:1;transition:color .2s;
+}
+.story-card-print:hover { color:#fff; }
 .story-card-del {
   position:absolute;top:10px;right:10px;
   background:rgba(239,68,68,.75);backdrop-filter:blur(6px);
@@ -572,7 +578,10 @@ async function loadHome() {
   }
   grid.innerHTML = stories.map(s => `
     <div class="story-card" onclick="nav('play','${s.id}')">
-      <div class="story-card-scenes">${s.scene_count} scenes</div>
+      <div class="story-card-scenes">
+        ${s.scene_count} scenes
+        <button class="story-card-print" onclick="event.stopPropagation();printStory('${s.id}')" title="Print story">🖨</button>
+      </div>
       ${isAdmin ? `<button class="story-card-del" onclick="event.stopPropagation();confirmDel('${s.id}','${s.title.replace(/'/g,"\\'")}',loadHome)" title="Delete story">🗑</button>` : ''}
       <img class="story-card-thumb" src="/api/stories/${s.id}/image/hook"
            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" alt="">
@@ -983,6 +992,82 @@ function toast(msg, type) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.className = `show ${type}`;
   setTimeout(() => t.className = '', 3000);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  PRINT
+// ═══════════════════════════════════════════════════════════
+async function printStory(storyId) {
+  const [cfg, urls] = await Promise.all([
+    api('GET', `/api/stories/${storyId}`),
+    api('GET', `/api/stories/${storyId}/asset-urls`),
+  ]);
+  if (cfg.error) { toast('❌ Could not load story', 'err'); return; }
+
+  const imgUrl = (key) => urls.images?.[String(key)] ?? `/api/stories/${storyId}/image/${key}`;
+  const hookImg = urls.hook_image ?? `/api/stories/${storyId}/image/hook`;
+
+  const pages = [
+    // Cover page
+    `<div class="page cover">
+      <img src="${hookImg}" alt="cover">
+      <h1>${cfg.title}</h1>
+      <p class="hook">${cfg.hook || ''}</p>
+    </div>`,
+    // Scene pages
+    ...cfg.scenes.map(s => `
+    <div class="page scene">
+      <img src="${imgUrl(s.index)}" alt="${s.title}">
+      <p class="narration">${s.narration}</p>
+    </div>`),
+    // Moral page
+    `<div class="page moral">
+      <img src="${imgUrl(cfg.scenes[cfg.scenes.length - 1].index)}" alt="ending">
+      <div class="moral-box">
+        <div class="moral-label">💡 Today's Lesson</div>
+        <p>${cfg.moral}</p>
+      </div>
+    </div>`,
+  ].join('');
+
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head>
+<meta charset="UTF-8">
+<title>${cfg.title}</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family: 'Georgia', serif; background:#fff; color:#222; }
+  .page {
+    width:100%; max-width:540px; margin:0 auto;
+    padding:28px 24px 20px;
+    page-break-after:always;
+    display:flex; flex-direction:column; align-items:center; gap:16px;
+  }
+  .page:last-child { page-break-after:auto; }
+  .page img {
+    width:100%; max-height:420px; object-fit:cover;
+    border-radius:12px; display:block;
+  }
+  .cover img { max-height:360px; }
+  .cover h1 { font-size:1.6rem; font-weight:700; text-align:center; line-height:1.3; }
+  .cover .hook { font-size:1rem; text-align:center; color:#555; font-style:italic; }
+  .narration { font-size:1.05rem; line-height:1.7; text-align:center; color:#333; }
+  .moral-box {
+    width:100%; border:2px solid #f5a623; border-radius:12px;
+    padding:16px 20px; text-align:center; background:#fffbf0;
+  }
+  .moral-label { font-size:.75rem; font-weight:700; letter-spacing:1.5px;
+                 text-transform:uppercase; color:#f5a623; margin-bottom:8px; }
+  .moral-box p { font-size:1.05rem; line-height:1.6; color:#333; }
+  @media print {
+    @page { margin:12mm; }
+    .page { padding:0; max-width:100%; }
+  }
+</style>
+</head><body>${pages}
+<script>window.onload=()=>window.print();<\/script>
+</body></html>`);
+  win.document.close();
 }
 
 routeHash();

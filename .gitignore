@@ -1,5 +1,7 @@
 # Secrets
 .env
+youtube_token.json
+youtube_client_secret.json
 
 # Python
 __pycache__/
