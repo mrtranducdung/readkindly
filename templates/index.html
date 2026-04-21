@@ -1008,30 +1008,21 @@ async function printStory(storyId) {
   const hookImg = urls.hook_image ?? `/api/stories/${storyId}/image/hook`;
   const last = cfg.scenes[cfg.scenes.length - 1];
 
-  // Group scenes into pairs for 2-per-page layout
-  const pairs = [];
-  for (let i = 0; i < cfg.scenes.length; i += 2) pairs.push(cfg.scenes.slice(i, i + 2));
-
-  const sceneSlot = s => `
-    <div class="slot">
-      <img src="${imgUrl(s.index)}" alt="${s.title}">
-      <p class="narration">${s.narration}</p>
-    </div>`;
-
   const pages = [
     // Cover
-    `<div class="page cover">
+    `<div class="page">
       <img src="${hookImg}" alt="cover">
       <h1>${cfg.title}</h1>
-      <p class="hook">${cfg.hook || ''}</p>
+      <p class="sub">${cfg.hook || ''}</p>
     </div>`,
-    // 2 scenes per page
-    ...pairs.map(pair => `
-    <div class="page scenes">
-      ${pair.map(sceneSlot).join('')}
+    // One scene per page
+    ...cfg.scenes.map(s => `
+    <div class="page">
+      <img src="${imgUrl(s.index)}" alt="${s.title}">
+      <p class="sub">${s.narration}</p>
     </div>`),
     // Moral
-    `<div class="page moral">
+    `<div class="page">
       <img src="${imgUrl(last.index)}" alt="ending">
       <div class="moral-box">
         <div class="moral-label">💡 Today's Lesson</div>
@@ -1048,42 +1039,27 @@ async function printStory(storyId) {
   * { box-sizing:border-box; margin:0; padding:0; }
   body { font-family:'Georgia',serif; background:#fff; color:#222; }
 
-  @page { size:A4 portrait; margin:12mm; }
+  @page { size:A4 portrait; margin:14mm; }
 
   .page {
-    width:100%; height:267mm; /* A4 297mm - 2×12mm margins - 6mm breathing room */
+    width:100%; height:269mm;
     page-break-after:always;
     display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:16px;
   }
   .page:last-child { page-break-after:auto; }
 
-  /* ── Cover ── */
-  .cover { align-items:center; justify-content:center; gap:14px; padding:8mm 0; }
-  .cover img { width:auto; max-width:55%; max-height:160mm; object-fit:contain; border-radius:10px; }
-  .cover h1 { font-size:1.7rem; font-weight:700; text-align:center; line-height:1.3; }
-  .cover .hook { font-size:1rem; text-align:center; color:#555; font-style:italic; max-width:80%; }
-
-  /* ── 2-per-page scenes ── */
-  .scenes { gap:6mm; }
-  .slot {
-    flex:1; display:flex; flex-direction:column;
-    border:1px solid #e8e8e8; border-radius:10px; overflow:hidden;
-    min-height:0; /* allow shrinking */
-  }
-  .slot img {
-    width:100%; flex:1; object-fit:cover; display:block; min-height:0;
-  }
-  .narration {
-    flex-shrink:0; padding:5px 10px 6px;
-    font-size:.82rem; line-height:1.55; text-align:center; color:#333;
-    border-top:1px solid #f0f0f0;
+  .page img {
+    width:auto; max-width:52%; max-height:180mm;
+    object-fit:contain; border-radius:12px; display:block;
   }
 
-  /* ── Moral ── */
-  .moral { align-items:center; justify-content:center; gap:14px; padding:8mm 0; }
-  .moral img { width:auto; max-width:55%; max-height:150mm; object-fit:contain; border-radius:10px; }
+  h1  { font-size:1.65rem; font-weight:700; text-align:center; line-height:1.3; max-width:85%; }
+  .sub { font-size:1rem; line-height:1.65; text-align:center; color:#444;
+         font-style:italic; max-width:80%; }
+
   .moral-box {
-    width:90%; border:2px solid #f5a623; border-radius:12px;
+    width:82%; border:2px solid #f5a623; border-radius:12px;
     padding:14px 20px; text-align:center; background:#fffbf0;
   }
   .moral-label { font-size:.7rem; font-weight:700; letter-spacing:1.5px;
