@@ -12,9 +12,12 @@ Saves credentials to youtube_token.json for reuse.
 import os
 from pathlib import Path
 
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
+try:
+    from google_auth_oauthlib.flow import InstalledAppFlow
+    from google.auth.transport.requests import Request
+    from google.oauth2.credentials import Credentials
+except ImportError as _e:
+    raise ImportError(f"YouTube auth requires google-auth-oauthlib: {_e}")
 
 SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
 CLIENT_SECRET_FILE = "youtube_client_secret.json"

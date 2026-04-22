@@ -12,10 +12,13 @@ import json
 import os
 from pathlib import Path
 
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload
-
-from youtube_auth import get_credentials
+try:
+    from googleapiclient.discovery import build
+    from googleapiclient.http import MediaFileUpload
+    from youtube_auth import get_credentials
+    _YOUTUBE_AVAILABLE = True
+except ImportError:
+    _YOUTUBE_AVAILABLE = False
 
 
 def find_latest_out() -> Path:
@@ -26,6 +29,8 @@ def find_latest_out() -> Path:
 
 
 def upload_video(workdir: Path) -> dict:
+    if not _YOUTUBE_AVAILABLE:
+        raise RuntimeError("YouTube packages not installed (google-api-python-client, google-auth-oauthlib)")
     config_path = workdir / "story_config.json"
     video_path = workdir / "video" / "story_video.mp4"
     thumb_path = workdir / "video" / "thumb.jpg"
