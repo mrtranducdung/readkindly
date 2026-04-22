@@ -1,6 +1,6 @@
 ---
 name: generate_new
-description: Generate a new kids moral story for the webapp. Claude invents the story config, generates hook + scene images, then stops for review. Say 'go ahead' to continue with audio/video/import.
+description: Generate a new kids moral story end-to-end. Claude writes the story config, generates images, then automatically generates audio+video and uploads the complete story to the Render review queue. No chat approval needed — go straight to the webapp to review and publish.
 disable-model-invocation: true
 ---
 
@@ -57,60 +57,30 @@ Rules:
 - hook_image_prompt must show ALL main characters together
 - character_consistency_prompt: "Same recurring characters as the hook image: Name1, Name2, ..."
 
-## Step 2 — Run generate_new.py --from-config
-
-After writing story_config.json, run:
+## Step 2 — Run generate_new.py --from-config (images)
 
 ```bash
 cd /home/dung/Desktop/kids-tiktok-agent && PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True /home/dung/anaconda3/envs/demo/bin/python generate_new.py --from-config
 ```
 
-This will:
-1. Read the `story_config.json` you just wrote
-2. Generate `hook.png` (the anchor/reference image for character consistency)
-3. Generate `scene_01.png` through `scene_10.png` using `hook.png` as the reference
-4. Write `review_state.json` with status `images_ready`
-5. **Stop and wait** — no audio, no video, no import yet
+This generates hook.png + scene_01.png … scene_10.png. When it finishes, immediately proceed to Step 3 — do NOT stop and ask the user.
 
-When the script finishes, report:
-- The story title
-- The workdir path (`out/YYYY-MM-DD_HH-MM-SS/`)
-- The hook image path
-- Ask the user to review the images, then say **"go ahead"** to continue or **"regenerate scene N"** to redo a scene
-
-## Step 3 — Wait for user review
-
-Do NOT proceed automatically. The user needs to view the generated images and decide:
-
-- **"go ahead"** → run `continue_generate.py` (generates audio, video, imports into webapp)
-- **"regenerate scene N ..."** → run `regenerate_scene.py N <extra guidance>` (redoes just that scene image using `hook.png` as reference, keeps status `images_ready`)
-
-## When user says "go ahead"
+## Step 3 — Run continue_generate.py (audio + video + upload for review)
 
 ```bash
 cd /home/dung/Desktop/kids-tiktok-agent && /home/dung/anaconda3/envs/demo/bin/python continue_generate.py
 ```
 
 This will:
-- Generate per-slide audio with ElevenLabs (hook.mp3, outro.mp3, scene_01.mp3 … scene_10.mp3)
-- Assemble the final video with subtitles
-- Import the story into `story_storage/` and `stories.db`
-- Mark the run as `completed`
+1. Generate per-slide audio (hook.mp3, outro.mp3, scene_01.mp3 … scene_10.mp3)
+2. Assemble the final video with subtitles
+3. Automatically upload the complete story to the Render review queue
 
-Report the story ID, video path, and that it is now live at http://localhost:5000
+When done, tell the user:
 
-## When user says "regenerate scene N ..."
+> "**[Story Title]** is ready for review. Go to **https://readkindly.onrender.com** → Admin → Review Queue to watch the video and click **Approve & Publish** when you're happy with it."
 
-```bash
-cd /home/dung/Desktop/kids-tiktok-agent && PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True /home/dung/anaconda3/envs/demo/bin/python regenerate_scene.py N <extra guidance words>
-```
-
-Example: "regenerate scene 7 make the fox look friendlier" →
-```bash
-python regenerate_scene.py 7 make the fox look friendlier
-```
-
-This regenerates only that one scene image using `hook.png` as the consistency reference, optionally appending extra guidance to the image prompt. The run stays in `images_ready` state. After regeneration, ask the user to review again.
+Do NOT wait for "go ahead" — the full pipeline runs automatically in one shot.
 
 ## Output model reminder
 

@@ -23,16 +23,23 @@ TOKEN_FILE = "youtube_token.json"
 
 def get_credentials():
     creds = None
+
+    # On Render: token stored as env var JSON string
+    token_env = os.environ.get("YOUTUBE_TOKEN_JSON", "")
+    if token_env and not Path(TOKEN_FILE).exists():
+        Path(TOKEN_FILE).write_text(token_env)
+
     if Path(TOKEN_FILE).exists():
         creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
 
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
+            Path(TOKEN_FILE).write_text(creds.to_json())
         else:
             flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRET_FILE, SCOPES)
             creds = flow.run_local_server(port=0)
-        Path(TOKEN_FILE).write_text(creds.to_json())
+            Path(TOKEN_FILE).write_text(creds.to_json())
         print(f"✅ Credentials saved to {TOKEN_FILE}")
 
     return creds

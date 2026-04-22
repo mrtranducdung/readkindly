@@ -97,6 +97,34 @@ def upload_out(session, workdir: Path, base_url: str):
     return r.json()
 
 
+def upload_pending_review(session, workdir: Path, base_url: str):
+    """Upload a fully-generated story to the Render review queue (pending_review state)."""
+    workdir = Path(workdir)
+    run_id = workdir.name
+    config_path, images, audios = collect_files_from_out(workdir)
+    video_path = workdir / "video" / "story_video.mp4"
+
+    print(f"  Run ID : {run_id}")
+    print(f"  Images : {len(images)}  Audio: {len(audios)}  Video: {'yes' if video_path.exists() else 'no'}")
+
+    files = [("config", ("story_config.json", config_path.open("rb"), "application/json"))]
+    for img in images:
+        files.append(("images", (img.name, img.open("rb"), "image/png")))
+    for audio in audios:
+        files.append(("audio", (audio.name, audio.open("rb"), "audio/mpeg")))
+    if video_path.exists():
+        files.append(("video", ("story_video.mp4", video_path.open("rb"), "video/mp4")))
+
+    r = session.post(
+        f"{base_url}/api/admin/pending",
+        data={"run_id": run_id},
+        files=files,
+        timeout=300,
+    )
+    r.raise_for_status()
+    return r.json()
+
+
 def upload_storage(session, story_dir: Path, base_url: str):
     meta_path, images, audios = collect_files_from_storage(story_dir)
     print(f"  Config : {meta_path.name}")

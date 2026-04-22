@@ -69,16 +69,16 @@ def main() -> int:
         )
     )
 
-    # Auto-upload to Render
+    # Upload to Render review queue
     render_url = os.getenv("RENDER_URL", "").rstrip("/")
     admin_password = os.getenv("ADMIN_PASSWORD", "")
     if render_url:
-        print(f"\nUploading to Render: {render_url} ...")
+        print(f"\nUploading to Render review queue: {render_url} ...")
         try:
             session = upload_to_render.login(render_url, admin_password)
-            result_render = upload_to_render.upload_out(session, workdir, render_url)
-            print(f"✅ Published on Render: \"{result_render['title']}\" → ID: {result_render['id']}")
-            print(f"   Live at: {render_url}")
+            result_render = upload_to_render.upload_pending_review(session, workdir, render_url)
+            print(f"✅ Story in review queue: \"{result_render['title']}\"")
+            print(f"   Review at: {render_url} → Admin → Review Queue")
         except Exception as e:
             print(f"✗ Render upload failed: {e}")
     else:

@@ -9,12 +9,13 @@ import json
 import os
 import re
 import shutil
-import subprocess
-import threading
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import wraps
 from pathlib import Path
+
+import stripe
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from dotenv import load_dotenv
 from flask import Flask, jsonify, redirect, render_template, request, send_file, session
@@ -23,7 +24,12 @@ load_dotenv()
 
 app = Flask(__name__)
 app.secret_key   = os.environ.get("SECRET_KEY", "lumi-secret-key-2024")
+app.permanent_session_lifetime = timedelta(days=30)
 ADMIN_PASSWORD   = os.environ.get("ADMIN_PASSWORD", "lumi2024")
+
+stripe.api_key          = os.environ.get("STRIPE_SECRET_KEY", "")
+STRIPE_WEBHOOK_SECRET   = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
+STRIPE_PRICE_ID         = os.environ.get("STRIPE_PRICE_ID", "")
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
@@ -156,19 +162,14 @@ init_db()
 
 # ── Review-queue helpers ──────────────────────────────────────────────────────
 
-_OUT_DIR = Path(__file__).parent.resolve() / "out"
-_PYTHON_BIN = "/home/dung/anaconda3/envs/demo/bin/python"
-_BASE_DIR = Path(__file__).parent.resolve()
+_PENDING_DIR = Path(__file__).parent.resolve() / "pending_review"
+_PENDING_DIR.mkdir(exist_ok=True)
 _RUN_ID_RE = re.compile(r"^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}$")
-_jobs: dict = {}
-_jobs_lock = threading.Lock()
 
 
 def _scan_pending_runs() -> list:
     runs = []
-    if not _OUT_DIR.exists():
-        return runs
-    for d in sorted(_OUT_DIR.iterdir(), reverse=True):
+    for d in sorted(_PENDING_DIR.iterdir(), reverse=True):
         if not d.is_dir() or not _RUN_ID_RE.match(d.name):
             continue
         sf = d / "review_state.json"
@@ -176,7 +177,7 @@ def _scan_pending_runs() -> list:
             continue
         try:
             state = json.loads(sf.read_text())
-            if state.get("status") != "images_ready":
+            if state.get("status") != "pending_review":
                 continue
             cfg_file = d / "story_config.json"
             cfg = json.loads(cfg_file.read_text()) if cfg_file.exists() else {}
@@ -188,31 +189,14 @@ def _scan_pending_runs() -> list:
                 "run_id": d.name,
                 "title": state.get("title") or cfg.get("title", "Untitled"),
                 "moral": cfg.get("moral", ""),
-                "created_at": state.get("updated_at", ""),
+                "created_at": state.get("created_at", ""),
                 "scene_count": state.get("scene_count", 10),
+                "has_video": state.get("has_video", False),
                 "scenes_info": scenes_info,
             })
         except Exception:
             continue
     return runs
-
-
-def _run_job(job_id: str, cmd: list) -> None:
-    env = os.environ.copy()
-    env["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
-    with _jobs_lock:
-        _jobs[job_id] = {"status": "running", "output": "", "error": ""}
-    try:
-        proc = subprocess.run(cmd, capture_output=True, text=True, env=env)
-        with _jobs_lock:
-            _jobs[job_id] = {
-                "status": "done" if proc.returncode == 0 else "error",
-                "output": (proc.stdout or "")[-4000:],
-                "error": (proc.stderr or "")[-2000:],
-            }
-    except Exception as exc:
-        with _jobs_lock:
-            _jobs[job_id] = {"status": "error", "output": "", "error": str(exc)}
 
 
 # ── Storage helpers ───────────────────────────────────────────────────────────
@@ -446,17 +430,108 @@ def list_review_runs():
     return jsonify(_scan_pending_runs())
 
 
+@app.route("/api/admin/pending", methods=["POST"])
+@admin_required
+def submit_for_review():
+    run_id = request.form.get("run_id", "").strip()
+    if not run_id or not _RUN_ID_RE.match(run_id):
+        return jsonify({"error": "Invalid or missing run_id"}), 400
+    config_file = request.files.get("config")
+    if not config_file:
+        return jsonify({"error": "config required"}), 400
+
+    pending_dir = _PENDING_DIR / run_id
+    images_dir = pending_dir / "images"
+    audio_dir = pending_dir / "audio"
+    video_dir = pending_dir / "video"
+    for d in (images_dir, audio_dir, video_dir):
+        d.mkdir(parents=True, exist_ok=True)
+
+    try:
+        config = json.loads(config_file.read().decode("utf-8"))
+    except Exception as e:
+        return jsonify({"error": f"Invalid config JSON: {e}"}), 400
+    (pending_dir / "story_config.json").write_text(json.dumps(config, indent=2))
+
+    for img in request.files.getlist("images"):
+        fname = img.filename
+        if re.match(r"^(hook|scene_\d{2})\.(png|jpg|jpeg)$", fname):
+            (images_dir / fname).write_bytes(img.read())
+
+    for af in request.files.getlist("audio"):
+        fname = af.filename
+        if re.match(r"^(hook|outro|scene_\d{2})\.mp3$", fname):
+            (audio_dir / fname).write_bytes(af.read())
+
+    video_file = request.files.get("video")
+    has_video = False
+    if video_file:
+        (video_dir / "story_video.mp4").write_bytes(video_file.read())
+        has_video = True
+
+    state = {
+        "status": "pending_review",
+        "run_id": run_id,
+        "title": config.get("title", "Untitled"),
+        "scene_count": len(config.get("scenes", [])),
+        "has_video": has_video,
+        "created_at": datetime.now().isoformat(),
+    }
+    (pending_dir / "review_state.json").write_text(json.dumps(state, indent=2))
+    return jsonify({"ok": True, "run_id": run_id, "title": state["title"]})
+
+
 @app.route("/api/admin/review/<run_id>/image/<filename>")
 @admin_required
 def serve_review_image(run_id, filename):
     if not _RUN_ID_RE.match(run_id):
         return jsonify({"error": "Invalid run_id"}), 400
-    if not re.match(r"^(hook|scene_\d{2})\.png$", filename):
+    if not re.match(r"^(hook|scene_\d{2})\.(png|jpg|jpeg)$", filename):
         return jsonify({"error": "Invalid filename"}), 400
-    img_path = _OUT_DIR / run_id / "images" / filename
+    img_path = _PENDING_DIR / run_id / "images" / filename
     if not img_path.exists():
         return jsonify({"error": "Not found"}), 404
-    return send_file(img_path, mimetype="image/png")
+    ext = filename.rsplit(".", 1)[-1]
+    return send_file(img_path, mimetype=f"image/{ext}")
+
+
+@app.route("/api/admin/review/<run_id>/video")
+@admin_required
+def serve_review_video(run_id):
+    if not _RUN_ID_RE.match(run_id):
+        return jsonify({"error": "Invalid run_id"}), 400
+    video_path = _PENDING_DIR / run_id / "video" / "story_video.mp4"
+    if not video_path.exists():
+        return jsonify({"error": "Not found"}), 404
+    return send_file(video_path, mimetype="video/mp4")
+
+
+def _tiktok_upload(video_path: str, caption: str, token: str) -> str:
+    """Upload video to TikTok. Returns publish_id."""
+    import requests as _req
+    base = "https://open.tiktokapis.com"
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json; charset=UTF-8"}
+    size = Path(video_path).stat().st_size
+    init_r = _req.post(f"{base}/v2/post/publish/video/init/", headers=headers, json={
+        "post_info": {"title": caption[:150], "privacy_level": "PUBLIC_TO_EVERYONE",
+                      "disable_duet": False, "disable_comment": False,
+                      "disable_stitch": False, "video_cover_timestamp_ms": 1000},
+        "source_info": {"source": "FILE_UPLOAD", "video_size": size,
+                        "chunk_size": size, "total_chunk_count": 1},
+    }, timeout=30)
+    init_r.raise_for_status()
+    data = init_r.json().get("data", {})
+    upload_url = data.get("upload_url")
+    if not upload_url:
+        raise RuntimeError(f"TikTok init returned no upload_url: {init_r.json()}")
+    raw = Path(video_path).read_bytes()
+    put_r = _req.put(upload_url, headers={
+        "Content-Type": "video/mp4",
+        "Content-Length": str(size),
+        "Content-Range": f"bytes 0-{size - 1}/{size}",
+    }, data=raw, timeout=300)
+    put_r.raise_for_status()
+    return data.get("publish_id", "")
 
 
 @app.route("/api/admin/review/<run_id>/approve", methods=["POST"])
@@ -464,45 +539,356 @@ def serve_review_image(run_id, filename):
 def approve_run(run_id):
     if not _RUN_ID_RE.match(run_id):
         return jsonify({"error": "Invalid run_id"}), 400
-    workdir = _OUT_DIR / run_id
-    if not (workdir / "review_state.json").exists():
+    pending_dir = _PENDING_DIR / run_id
+    if not (pending_dir / "review_state.json").exists():
         return jsonify({"error": "Run not found"}), 404
-    job_id = str(uuid.uuid4())[:8]
-    cmd = [_PYTHON_BIN, str(_BASE_DIR / "continue_generate.py"), "--workdir", str(workdir)]
-    threading.Thread(target=_run_job, args=(job_id, cmd), daemon=True).start()
-    return jsonify({"job_id": job_id})
+
+    config = json.loads((pending_dir / "story_config.json").read_text())
+    story_id = str(uuid.uuid4())[:8]
+    created_at = datetime.now().isoformat()
+
+    images_dir = pending_dir / "images"
+    for img in sorted(images_dir.glob("*")):
+        ext = img.suffix.lstrip(".")
+        data = img.read_bytes()
+        if img.stem == "hook":
+            store_file(story_id, "images", f"hook.{ext}", data, f"image/{ext}")
+        else:
+            m = re.search(r"scene_(\d+)", img.name)
+            if m:
+                store_file(story_id, "images", f"{int(m.group(1))}.{ext}", data, f"image/{ext}")
+
+    audio_dir = pending_dir / "audio"
+    saved_audio = 0
+    for af in sorted(audio_dir.glob("*.mp3")):
+        data = af.read_bytes()
+        if af.name in ("hook.mp3", "outro.mp3"):
+            store_file(story_id, "audio", af.name, data, "audio/mpeg")
+        else:
+            m = re.search(r"scene_(\d+)", af.name)
+            if m:
+                store_file(story_id, "audio", f"scene_{int(m.group(1)):02d}.mp3", data, "audio/mpeg")
+                saved_audio += 1
+
+    if saved_audio == 0:
+        shutil.rmtree(pending_dir, ignore_errors=True)
+        return jsonify({"error": "No audio scene files found in pending run"}), 400
+
+    meta = {**config, "id": story_id, "created_at": created_at}
+    db_insert(story_id, meta, created_at)
+
+    # ── TikTok upload ──────────────────────────────────────────────────────────
+    tiktok_token = os.environ.get("TIKTOK_ACCESS_TOKEN", "")
+    video_path = pending_dir / "video" / "story_video.mp4"
+    tiktok_result = None
+    if tiktok_token and video_path.exists():
+        try:
+            title = config.get("title", "")
+            hashtags = " ".join(config.get("hashtags", ["#kidsstories", "#storytime"]))
+            caption = f"{title} {hashtags}"
+            tiktok_result = _tiktok_upload(str(video_path), caption, tiktok_token)
+            app.logger.info(f"TikTok upload ok: {tiktok_result}")
+        except Exception as e:
+            app.logger.error(f"TikTok upload failed: {e}")
+
+    # ── YouTube upload ─────────────────────────────────────────────────────────
+    youtube_result = None
+    youtube_token_json = os.environ.get("YOUTUBE_TOKEN_JSON", "")
+    if video_path.exists() and (youtube_token_json or Path("youtube_token.json").exists()):
+        try:
+            from upload_to_youtube import upload_video as _yt_upload
+            youtube_result = _yt_upload(pending_dir)
+            app.logger.info(f"YouTube upload ok: {youtube_result.get('url')}")
+        except Exception as e:
+            app.logger.error(f"YouTube upload failed: {e}")
+
+    shutil.rmtree(pending_dir, ignore_errors=True)
+    return jsonify({
+        "ok": True,
+        "story_id": story_id,
+        "title": config.get("title"),
+        "tiktok": tiktok_result,
+        "youtube": youtube_result,
+    })
 
 
-@app.route("/api/admin/review/<run_id>/regenerate", methods=["POST"])
+@app.route("/api/admin/review/<run_id>", methods=["DELETE"])
 @admin_required
-def regenerate_scene_route(run_id):
+def reject_run(run_id):
     if not _RUN_ID_RE.match(run_id):
         return jsonify({"error": "Invalid run_id"}), 400
-    workdir = _OUT_DIR / run_id
-    if not (workdir / "review_state.json").exists():
+    pending_dir = _PENDING_DIR / run_id
+    if not pending_dir.exists():
+        return jsonify({"error": "Run not found"}), 404
+    shutil.rmtree(pending_dir, ignore_errors=True)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/admin/review/<run_id>/regen-request", methods=["POST"])
+@admin_required
+def create_regen_request(run_id):
+    if not _RUN_ID_RE.match(run_id):
+        return jsonify({"error": "Invalid run_id"}), 400
+    pending_dir = _PENDING_DIR / run_id
+    if not (pending_dir / "review_state.json").exists():
         return jsonify({"error": "Run not found"}), 404
     data = request.get_json() or {}
-    scene_n = str(data.get("scene", "")).strip()
-    if not scene_n.isdigit():
+    scene = data.get("scene")
+    if not scene or not str(scene).isdigit():
         return jsonify({"error": "scene number required"}), 400
-    guidance = str(data.get("guidance", "")).strip()
-    job_id = str(uuid.uuid4())[:8]
-    cmd = [_PYTHON_BIN, str(_BASE_DIR / "regenerate_scene.py"),
-           "--workdir", str(workdir), scene_n]
-    if guidance:
-        cmd.extend(guidance.split())
-    threading.Thread(target=_run_job, args=(job_id, cmd), daemon=True).start()
-    return jsonify({"job_id": job_id})
+    regen = {
+        "scene": int(scene),
+        "guidance": str(data.get("guidance", "")).strip(),
+        "created_at": datetime.now().isoformat(),
+    }
+    (pending_dir / "regen_request.json").write_text(json.dumps(regen, indent=2))
+    return jsonify({"ok": True, "run_id": run_id, "scene": regen["scene"]})
 
 
-@app.route("/api/admin/review/jobs/<job_id>")
+@app.route("/api/admin/review/<run_id>/regen-request", methods=["DELETE"])
 @admin_required
-def get_job_status(job_id):
-    with _jobs_lock:
-        job = _jobs.get(job_id)
-    if not job:
-        return jsonify({"error": "not found"}), 404
-    return jsonify(job)
+def clear_regen_request(run_id):
+    if not _RUN_ID_RE.match(run_id):
+        return jsonify({"error": "Invalid run_id"}), 400
+    regen_path = _PENDING_DIR / run_id / "regen_request.json"
+    if regen_path.exists():
+        regen_path.unlink()
+    return jsonify({"ok": True})
+
+
+@app.route("/api/admin/review/regen-requests")
+@admin_required
+def list_regen_requests():
+    results = []
+    for d in sorted(_PENDING_DIR.iterdir(), reverse=True):
+        if not d.is_dir() or not _RUN_ID_RE.match(d.name):
+            continue
+        regen_path = d / "regen_request.json"
+        if not regen_path.exists():
+            continue
+        try:
+            regen = json.loads(regen_path.read_text())
+            state = json.loads((d / "review_state.json").read_text())
+            results.append({
+                "run_id": d.name,
+                "title": state.get("title", "Untitled"),
+                "scene": regen["scene"],
+                "guidance": regen.get("guidance", ""),
+                "created_at": regen["created_at"],
+            })
+        except Exception:
+            continue
+    return jsonify(results)
+
+
+# ── Users DB ──────────────────────────────────────────────────────────────────
+
+def _init_users_db():
+    if USE_SUPABASE:
+        return  # create table once in Supabase dashboard
+    with _local_db() as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id                   TEXT PRIMARY KEY,
+                email                TEXT UNIQUE NOT NULL,
+                password_hash        TEXT NOT NULL,
+                created_at           TEXT,
+                stripe_customer_id   TEXT,
+                stripe_subscription_id TEXT,
+                is_premium           INTEGER DEFAULT 0
+            )
+        """)
+        conn.commit()
+
+_init_users_db()
+
+
+def _user_by_email(email):
+    if USE_SUPABASE:
+        r = _sb.table("users").select("*").eq("email", email).maybe_single().execute()
+        return r.data
+    with _local_db() as conn:
+        row = conn.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
+        return dict(row) if row else None
+
+
+def _user_by_id(uid):
+    if USE_SUPABASE:
+        r = _sb.table("users").select("*").eq("id", uid).maybe_single().execute()
+        return r.data
+    with _local_db() as conn:
+        row = conn.execute("SELECT * FROM users WHERE id=?", (uid,)).fetchone()
+        return dict(row) if row else None
+
+
+def _user_by_customer(customer_id):
+    if USE_SUPABASE:
+        r = _sb.table("users").select("*").eq("stripe_customer_id", customer_id).maybe_single().execute()
+        return r.data
+    with _local_db() as conn:
+        row = conn.execute("SELECT * FROM users WHERE stripe_customer_id=?", (customer_id,)).fetchone()
+        return dict(row) if row else None
+
+
+def _user_create(email, password):
+    uid = str(uuid.uuid4())[:12]
+    row = {"id": uid, "email": email,
+           "password_hash": generate_password_hash(password),
+           "created_at": datetime.now().isoformat(),
+           "stripe_customer_id": None, "stripe_subscription_id": None, "is_premium": 0}
+    if USE_SUPABASE:
+        _sb.table("users").insert(row).execute()
+    else:
+        with _local_db() as conn:
+            conn.execute(
+                "INSERT INTO users (id,email,password_hash,created_at,stripe_customer_id,stripe_subscription_id,is_premium) "
+                "VALUES (:id,:email,:password_hash,:created_at,:stripe_customer_id,:stripe_subscription_id,:is_premium)", row)
+            conn.commit()
+    return row
+
+
+def _user_patch(uid, **fields):
+    if USE_SUPABASE:
+        _sb.table("users").update(fields).eq("id", uid).execute()
+    else:
+        set_clause = ", ".join(f"{k}=?" for k in fields)
+        with _local_db() as conn:
+            conn.execute(f"UPDATE users SET {set_clause} WHERE id=?", [*fields.values(), uid])
+            conn.commit()
+
+
+def _user_patch_by_customer(customer_id, **fields):
+    if USE_SUPABASE:
+        _sb.table("users").update(fields).eq("stripe_customer_id", customer_id).execute()
+    else:
+        set_clause = ", ".join(f"{k}=?" for k in fields)
+        with _local_db() as conn:
+            conn.execute(f"UPDATE users SET {set_clause} WHERE stripe_customer_id=?", [*fields.values(), customer_id])
+            conn.commit()
+
+
+# ── Auth routes ───────────────────────────────────────────────────────────────
+
+@app.route("/api/auth/signup", methods=["POST"])
+def auth_signup():
+    data     = request.get_json() or {}
+    email    = data.get("email", "").strip().lower()
+    password = data.get("password", "")
+    if not email or "@" not in email:
+        return jsonify({"error": "Valid email required"}), 400
+    if len(password) < 6:
+        return jsonify({"error": "Password must be at least 6 characters"}), 400
+    if _user_by_email(email):
+        return jsonify({"error": "Email already registered — please sign in"}), 409
+    user = _user_create(email, password)
+    session.permanent = True
+    session["user_id"] = user["id"]
+    return jsonify({"ok": True, "email": email, "is_premium": False})
+
+
+@app.route("/api/auth/login", methods=["POST"])
+def auth_login():
+    data     = request.get_json() or {}
+    email    = data.get("email", "").strip().lower()
+    password = data.get("password", "")
+    user     = _user_by_email(email)
+    if not user or not check_password_hash(user["password_hash"], password):
+        return jsonify({"error": "Wrong email or password"}), 401
+    session.permanent = True
+    session["user_id"] = user["id"]
+    return jsonify({"ok": True, "email": email, "is_premium": bool(user.get("is_premium"))})
+
+
+@app.route("/api/auth/logout", methods=["POST"])
+def auth_logout():
+    session.pop("user_id", None)
+    return jsonify({"ok": True})
+
+
+@app.route("/api/auth/me")
+def auth_me():
+    uid = session.get("user_id")
+    if not uid:
+        return jsonify({"logged_in": False})
+    user = _user_by_id(uid)
+    if not user:
+        session.pop("user_id", None)
+        return jsonify({"logged_in": False})
+    return jsonify({"logged_in": True, "email": user["email"], "is_premium": bool(user.get("is_premium"))})
+
+
+# ── Stripe routes ─────────────────────────────────────────────────────────────
+
+@app.route("/api/stripe/create-checkout", methods=["POST"])
+def stripe_create_checkout():
+    uid = session.get("user_id")
+    if not uid:
+        return jsonify({"error": "Login required"}), 401
+    user = _user_by_id(uid)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    if not stripe.api_key:
+        return jsonify({"error": "Payments not configured yet"}), 503
+    try:
+        customer_id = user.get("stripe_customer_id")
+        if not customer_id:
+            customer    = stripe.Customer.create(email=user["email"])
+            customer_id = customer.id
+            _user_patch(uid, stripe_customer_id=customer_id)
+        base = request.host_url.rstrip("/")
+        session_obj = stripe.checkout.Session.create(
+            customer=customer_id,
+            payment_method_types=["card"],
+            line_items=[{"price": STRIPE_PRICE_ID, "quantity": 1}],
+            mode="subscription",
+            success_url=base + "/?premium=success",
+            cancel_url=base + "/",
+        )
+        return jsonify({"url": session_obj.url})
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.route("/api/stripe/webhook", methods=["POST"])
+def stripe_webhook():
+    payload = request.get_data()
+    sig     = request.headers.get("Stripe-Signature", "")
+    try:
+        event = stripe.Webhook.construct_event(payload, sig, STRIPE_WEBHOOK_SECRET)
+    except Exception:
+        return jsonify({"error": "Invalid signature"}), 400
+
+    etype = event["type"]
+    obj   = event["data"]["object"]
+
+    if etype == "checkout.session.completed":
+        customer_id = obj.get("customer")
+        sub_id      = obj.get("subscription")
+        if customer_id:
+            _user_patch_by_customer(customer_id, is_premium=1, stripe_subscription_id=sub_id)
+
+    elif etype in ("customer.subscription.deleted", "customer.subscription.paused"):
+        _user_patch_by_customer(obj.get("customer", ""), is_premium=0)
+
+    elif etype == "invoice.payment_failed":
+        _user_patch_by_customer(obj.get("customer", ""), is_premium=0)
+
+    elif etype == "customer.subscription.updated":
+        status = obj.get("status")
+        _user_patch_by_customer(obj.get("customer", ""), is_premium=1 if status == "active" else 0)
+
+    return jsonify({"ok": True})
+
+
+@app.route("/api/premium/check")
+def check_premium():
+    uid = session.get("user_id")
+    if not uid:
+        return jsonify({"logged_in": False, "is_premium": False})
+    user = _user_by_id(uid)
+    if not user:
+        return jsonify({"logged_in": False, "is_premium": False})
+    return jsonify({"logged_in": True, "is_premium": bool(user.get("is_premium")), "email": user["email"]})
 
 
 # ── Serve SPA ─────────────────────────────────────────────────────────────────
