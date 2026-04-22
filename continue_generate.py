@@ -84,41 +84,6 @@ def main() -> int:
     else:
         print("\nSkipping Render upload (RENDER_URL not set)")
 
-    # TikTok upload (requires TIKTOK_ACCESS_TOKEN)
-    tiktok_token = os.getenv("TIKTOK_ACCESS_TOKEN", "")
-    if tiktok_token:
-        print("\nUploading to TikTok ...")
-        try:
-            from genstory import TikTokAgent
-            tiktok = TikTokAgent(tiktok_token)
-            title = imported["title"]
-            hashtags = " ".join(config.get("hashtags", ["#kidsstories", "#storytime"]))
-            caption = f"{title} {hashtags}"
-            init = tiktok.init_direct_post(caption[:2200], video.video_path)
-            upload_url = init.get("data", {}).get("upload_url")
-            if upload_url:
-                tiktok.upload_binary(upload_url, video.video_path)
-                print(f"✅ Uploaded to TikTok: \"{title}\"")
-            else:
-                print(f"✗ TikTok upload error: no upload_url in response: {init}")
-        except Exception as e:
-            print(f"✗ TikTok upload failed: {e}")
-    else:
-        print("\nSkipping TikTok upload (TIKTOK_ACCESS_TOKEN not set)")
-
-    # YouTube upload (requires youtube_token.json)
-    youtube_token = Path("youtube_token.json")
-    if youtube_token.exists():
-        print("\nUploading to YouTube...")
-        try:
-            from upload_to_youtube import upload_video
-            yt_result = upload_video(workdir)
-            print(f"✅ YouTube: {yt_result['url']}")
-        except Exception as e:
-            print(f"✗ YouTube upload failed: {e}")
-    else:
-        print("\nSkipping YouTube upload (run python youtube_auth.py first)")
-
     return 0
 
 

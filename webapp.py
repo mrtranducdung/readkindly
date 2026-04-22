@@ -164,6 +164,8 @@ init_db()
 
 _PENDING_DIR = Path(__file__).parent.resolve() / "pending_review"
 _PENDING_DIR.mkdir(exist_ok=True)
+_SOCIAL_QUEUE_DIR = Path(__file__).parent.resolve() / "social_queue"
+_SOCIAL_QUEUE_DIR.mkdir(exist_ok=True)
 _RUN_ID_RE = re.compile(r"^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}$")
 
 
@@ -506,34 +508,6 @@ def serve_review_video(run_id):
     return send_file(video_path, mimetype="video/mp4")
 
 
-def _tiktok_upload(video_path: str, caption: str, token: str) -> str:
-    """Upload video to TikTok. Returns publish_id."""
-    import requests as _req
-    base = "https://open.tiktokapis.com"
-    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json; charset=UTF-8"}
-    size = Path(video_path).stat().st_size
-    init_r = _req.post(f"{base}/v2/post/publish/video/init/", headers=headers, json={
-        "post_info": {"title": caption[:150], "privacy_level": "PUBLIC_TO_EVERYONE",
-                      "disable_duet": False, "disable_comment": False,
-                      "disable_stitch": False, "video_cover_timestamp_ms": 1000},
-        "source_info": {"source": "FILE_UPLOAD", "video_size": size,
-                        "chunk_size": size, "total_chunk_count": 1},
-    }, timeout=30)
-    init_r.raise_for_status()
-    data = init_r.json().get("data", {})
-    upload_url = data.get("upload_url")
-    if not upload_url:
-        raise RuntimeError(f"TikTok init returned no upload_url: {init_r.json()}")
-    raw = Path(video_path).read_bytes()
-    put_r = _req.put(upload_url, headers={
-        "Content-Type": "video/mp4",
-        "Content-Length": str(size),
-        "Content-Range": f"bytes 0-{size - 1}/{size}",
-    }, data=raw, timeout=300)
-    put_r.raise_for_status()
-    return data.get("publish_id", "")
-
-
 @app.route("/api/admin/review/<run_id>/approve", methods=["POST"])
 @admin_required
 def approve_run(run_id):
@@ -577,39 +551,41 @@ def approve_run(run_id):
     meta = {**config, "id": story_id, "created_at": created_at}
     db_insert(story_id, meta, created_at)
 
-    # ── TikTok upload ──────────────────────────────────────────────────────────
-    tiktok_token = os.environ.get("TIKTOK_ACCESS_TOKEN", "")
-    video_path = pending_dir / "video" / "story_video.mp4"
-    tiktok_result = None
-    if tiktok_token and video_path.exists():
-        try:
-            title = config.get("title", "")
-            hashtags = " ".join(config.get("hashtags", ["#kidsstories", "#storytime"]))
-            caption = f"{title} {hashtags}"
-            tiktok_result = _tiktok_upload(str(video_path), caption, tiktok_token)
-            app.logger.info(f"TikTok upload ok: {tiktok_result}")
-        except Exception as e:
-            app.logger.error(f"TikTok upload failed: {e}")
-
-    # ── YouTube upload ─────────────────────────────────────────────────────────
-    youtube_result = None
-    youtube_token_json = os.environ.get("YOUTUBE_TOKEN_JSON", "")
-    if video_path.exists() and (youtube_token_json or Path("youtube_token.json").exists()):
-        try:
-            from upload_to_youtube import upload_video as _yt_upload
-            youtube_result = _yt_upload(pending_dir)
-            app.logger.info(f"YouTube upload ok: {youtube_result.get('url')}")
-        except Exception as e:
-            app.logger.error(f"YouTube upload failed: {e}")
+    # Queue social media upload for the local watcher to handle
+    social = {
+        "run_id": run_id,
+        "story_id": story_id,
+        "title": config.get("title", ""),
+        "hashtags": config.get("hashtags", []),
+        "approved_at": created_at,
+    }
+    (_SOCIAL_QUEUE_DIR / f"{run_id}.json").write_text(json.dumps(social, indent=2))
 
     shutil.rmtree(pending_dir, ignore_errors=True)
-    return jsonify({
-        "ok": True,
-        "story_id": story_id,
-        "title": config.get("title"),
-        "tiktok": tiktok_result,
-        "youtube": youtube_result,
-    })
+    return jsonify({"ok": True, "story_id": story_id, "title": config.get("title")})
+
+
+@app.route("/api/admin/social-queue")
+@admin_required
+def list_social_queue():
+    results = []
+    for f in sorted(_SOCIAL_QUEUE_DIR.glob("*.json"), reverse=True):
+        try:
+            results.append(json.loads(f.read_text()))
+        except Exception:
+            continue
+    return jsonify(results)
+
+
+@app.route("/api/admin/social-queue/<run_id>", methods=["DELETE"])
+@admin_required
+def clear_social_queue(run_id):
+    if not _RUN_ID_RE.match(run_id):
+        return jsonify({"error": "Invalid run_id"}), 400
+    path = _SOCIAL_QUEUE_DIR / f"{run_id}.json"
+    if path.exists():
+        path.unlink()
+    return jsonify({"ok": True})
 
 
 @app.route("/api/admin/review/<run_id>", methods=["DELETE"])
