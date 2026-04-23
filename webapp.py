@@ -929,13 +929,13 @@ _LEGAL_STYLE = """
 def tos():
     return f"""<!DOCTYPE html><html><head><title>Terms of Service – ReadKindly</title>{_LEGAL_STYLE}</head><body>
 <h1>ReadKindly – Terms of Service</h1>
-<p><strong>App name:</strong> ReadKindly &nbsp;|&nbsp; <strong>Last updated:</strong> April 24, 2026</p>
+<p><strong>App name:</strong> ReadKindly (readkindlyapp) &nbsp;|&nbsp; <strong>Last updated:</strong> April 24, 2026</p>
 
 <h2>1. Acceptance of Terms</h2>
-<p>By accessing or using ReadKindly ("the App", "we", "our"), you agree to be bound by these Terms of Service. If you do not agree, please do not use the App.</p>
+<p>By accessing or using ReadKindly, also known as <strong>readkindlyapp</strong> ("the App", "we", "our"), you agree to be bound by these Terms of Service. If you do not agree, please do not use the App.</p>
 
 <h2>2. Description of Service</h2>
-<p>ReadKindly is a children's story platform that generates and publishes short animated moral stories for kids. Content is created automatically and made available for viewing through our website and partner platforms.</p>
+<p>ReadKindly (readkindlyapp) is a children's story platform that generates and publishes short animated moral stories for kids. Content is created automatically and made available for viewing through our website and partner platforms.</p>
 
 <h2>3. Permitted Use</h2>
 <p>You may use ReadKindly for personal, non-commercial viewing of story content. You agree not to:</p>
@@ -971,10 +971,10 @@ def tos():
 def privacy():
     return f"""<!DOCTYPE html><html><head><title>Privacy Policy – ReadKindly</title>{_LEGAL_STYLE}</head><body>
 <h1>ReadKindly – Privacy Policy</h1>
-<p><strong>App name:</strong> ReadKindly &nbsp;|&nbsp; <strong>Last updated:</strong> April 24, 2026</p>
+<p><strong>App name:</strong> ReadKindly (readkindlyapp) &nbsp;|&nbsp; <strong>Last updated:</strong> April 24, 2026</p>
 
 <h2>1. Introduction</h2>
-<p>ReadKindly ("the App", "we", "us", "our") is committed to protecting your privacy. This Privacy Policy explains how we handle information when you use the ReadKindly website and services.</p>
+<p>ReadKindly, also known as <strong>readkindlyapp</strong> ("the App", "we", "us", "our") is committed to protecting your privacy. This Privacy Policy explains how we handle information when you use the ReadKindly website and services.</p>
 
 <h2>2. Information We Collect</h2>
 <p>ReadKindly does <strong>not</strong> require users to create an account or provide personal information to view stories. We do not collect names, email addresses, or any personally identifiable information from general visitors.</p>
