@@ -928,8 +928,8 @@ _LEGAL_STYLE = """
 @app.route("/tos")
 def tos():
     return f"""<!DOCTYPE html><html><head><title>Terms of Service – ReadKindly</title>{_LEGAL_STYLE}</head><body>
-<h1>Terms of Service</h1>
-<p><strong>App name:</strong> ReadKindly &nbsp;|&nbsp; <strong>Last updated:</strong> April 7, 2026</p>
+<h1>ReadKindly – Terms of Service</h1>
+<p><strong>App name:</strong> ReadKindly &nbsp;|&nbsp; <strong>Last updated:</strong> April 24, 2026</p>
 
 <h2>1. Acceptance of Terms</h2>
 <p>By accessing or using ReadKindly ("the App", "we", "our"), you agree to be bound by these Terms of Service. If you do not agree, please do not use the App.</p>
@@ -970,8 +970,8 @@ def tos():
 @app.route("/privacy")
 def privacy():
     return f"""<!DOCTYPE html><html><head><title>Privacy Policy – ReadKindly</title>{_LEGAL_STYLE}</head><body>
-<h1>Privacy Policy</h1>
-<p><strong>App name:</strong> ReadKindly &nbsp;|&nbsp; <strong>Last updated:</strong> April 7, 2026</p>
+<h1>ReadKindly – Privacy Policy</h1>
+<p><strong>App name:</strong> ReadKindly &nbsp;|&nbsp; <strong>Last updated:</strong> April 24, 2026</p>
 
 <h2>1. Introduction</h2>
 <p>ReadKindly ("the App", "we", "us", "our") is committed to protecting your privacy. This Privacy Policy explains how we handle information when you use the ReadKindly website and services.</p>
