@@ -609,11 +609,11 @@ def create_regen_request(run_id):
     if not (pending_dir / "review_state.json").exists():
         return jsonify({"error": "Run not found"}), 404
     data = request.get_json() or {}
-    scene = data.get("scene")
-    if not scene or not str(scene).isdigit():
-        return jsonify({"error": "scene number required"}), 400
+    scene = str(data.get("scene", "")).strip().lower()
+    if not scene or (scene not in ("hook", "outro") and not scene.isdigit()):
+        return jsonify({"error": "scene required: 'hook', 'outro', or a scene number"}), 400
     regen = {
-        "scene": int(scene),
+        "scene": scene,
         "guidance": str(data.get("guidance", "")).strip(),
         "created_at": datetime.now().isoformat(),
     }

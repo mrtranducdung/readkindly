@@ -381,12 +381,11 @@ body { font-family:'Nunito',system-ui,sans-serif; background:var(--bg); color:#f
 .rq-video { width:100%;border-radius:12px;margin:12px 0;max-height:420px;background:#000; }
 .rq-actions { display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:4px; }
 .rq-regen-form { display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08); }
-.rq-regen-form input {
+.rq-regen-form input, .rq-regen-form select {
   padding:7px 10px;background:rgba(255,255,255,.07);border:1px solid var(--border);
   border-radius:10px;color:#fff;font-family:inherit;font-size:.8rem;
 }
-.rq-regen-form input[type=number] { width:62px; }
-.rq-regen-form input[type=text]   { width:180px; }
+.rq-regen-form select { cursor:pointer; }
 .rq-status {
   position:absolute;inset:0;border-radius:20px;
   background:rgba(12,10,30,.82);backdrop-filter:blur(6px);
@@ -1294,8 +1293,12 @@ function renderReviewCard(run) {
       <button class="btn btn-ghost btn-sm" style="color:#e55" onclick="rejectRun('${run.run_id}')">🗑 Reject</button>
     </div>
     <div class="rq-regen-form">
-      <span style="font-size:.75rem;opacity:.5">Regenerate scene:</span>
-      <input type="number" id="rq-scene-${run.run_id}" min="1" max="${run.scene_count}" placeholder="Scene #">
+      <span style="font-size:.75rem;opacity:.5">Regenerate:</span>
+      <select id="rq-scene-${run.run_id}" style="background:#1a1a2e;color:#eee;border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:4px 6px;font-size:.8rem;">
+        <option value="hook">Hook</option>
+        ${Array.from({length: run.scene_count}, (_, i) => `<option value="${i+1}">Scene ${i+1}</option>`).join('')}
+        <option value="outro">Outro</option>
+      </select>
       <input type="text" id="rq-guide-${run.run_id}" placeholder="Guidance (optional)…" style="flex:1">
       <button class="btn btn-ghost btn-sm" onclick="requestRegen('${run.run_id}')">🔄 Request</button>
     </div>
@@ -1328,13 +1331,14 @@ async function rejectRun(runId) {
 async function requestRegen(runId) {
   const sceneEl = document.getElementById(`rq-scene-${runId}`);
   const guideEl = document.getElementById(`rq-guide-${runId}`);
-  const scene = parseInt(sceneEl.value);
-  if (!scene || scene < 1) { toast('Enter a scene number', 'err'); return; }
+  const scene = sceneEl.value;
+  if (!scene) { toast('Select a scene to regenerate', 'err'); return; }
   const guidance = guideEl.value.trim();
   const r = await api('POST', `/api/admin/review/${runId}/regen-request`, { scene, guidance });
   if (r.error) { toast('❌ ' + r.error, 'err'); return; }
-  sceneEl.value = ''; guideEl.value = '';
-  toast(`🔄 Scene ${scene} regeneration requested — watcher will pick it up shortly.`, 'ok');
+  guideEl.value = '';
+  const label = scene === 'hook' ? 'Hook' : scene === 'outro' ? 'Outro' : `Scene ${scene}`;
+  toast(`🔄 ${label} regeneration requested — watcher will pick it up shortly.`, 'ok');
 }
 </script>
 <footer style="text-align:center;padding:18px 0 12px;font-size:12px;color:#aaa;border-top:1px solid #222;margin-top:24px;">

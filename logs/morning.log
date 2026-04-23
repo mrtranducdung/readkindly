@@ -143,3 +143,190 @@ The following part of your input was truncated because CLIP can only handle sequ
 Generating scene 6/10: A Gentle Touch...
   0%|          | 0/4 [00:00<?, ?it/s] 25%|██▌       | 1/4 [00:14<00:44, 14.70s/it] 50%|█████     | 2/4 [00:29<00:29, 14.78s/it] 75%|███████▌  | 3/4 [00:44<00:14, 14.92s/it]100%|██████████| 4/4 [00:59<00:00, 14.74s/it]100%|██████████| 4/4 [00:59<00:00, 14.77s/it]
 The following part of your input was truncated because CLIP can only handle sequences up to 77 tokens: [', clear space for subtitle text']
+  Saved: /home/dung/Desktop/kids-tiktok-agent/out/2026-04-22_08-00-01/images/scene_06.png
+Generating scene 7/10: Success!...
+  0%|          | 0/4 [00:00<?, ?it/s] 25%|██▌       | 1/4 [00:16<00:48, 16.05s/it] 50%|█████     | 2/4 [00:30<00:30, 15.37s/it] 75%|███████▌  | 3/4 [00:46<00:15, 15.32s/it]100%|██████████| 4/4 [01:01<00:00, 15.13s/it]100%|██████████| 4/4 [01:01<00:00, 15.26s/it]
+The following part of your input was truncated because CLIP can only handle sequences up to 77 tokens: ['text']
+  Saved: /home/dung/Desktop/kids-tiktok-agent/out/2026-04-22_08-00-01/images/scene_07.png
+Generating scene 8/10: A Happy Dance...
+  0%|          | 0/4 [00:00<?, ?it/s] 25%|██▌       | 1/4 [00:14<00:44, 14.80s/it] 50%|█████     | 2/4 [00:29<00:29, 14.93s/it] 75%|███████▌  | 3/4 [00:44<00:14, 14.84s/it]100%|██████████| 4/4 [00:58<00:00, 14.65s/it]100%|██████████| 4/4 [00:58<00:00, 14.73s/it]
+The following part of your input was truncated because CLIP can only handle sequences up to 77 tokens: ['background with no characters or objects, clear space for subtitle text']
+  Saved: /home/dung/Desktop/kids-tiktok-agent/out/2026-04-22_08-00-01/images/scene_08.png
+Generating scene 9/10: A New Friendship...
+  0%|          | 0/4 [00:00<?, ?it/s] 25%|██▌       | 1/4 [00:14<00:42, 14.17s/it] 50%|█████     | 2/4 [00:29<00:29, 14.57s/it] 75%|███████▌  | 3/4 [00:43<00:14, 14.60s/it]100%|██████████| 4/4 [00:57<00:00, 14.49s/it]100%|██████████| 4/4 [00:57<00:00, 14.49s/it]
+The following part of your input was truncated because CLIP can only handle sequences up to 77 tokens: ['background with no characters or objects, clear space for subtitle text']
+  Saved: /home/dung/Desktop/kids-tiktok-agent/out/2026-04-22_08-00-01/images/scene_09.png
+Generating scene 10/10: Gentle Paws Forever...
+  0%|          | 0/4 [00:00<?, ?it/s] 25%|██▌       | 1/4 [00:14<00:42, 14.10s/it] 50%|█████     | 2/4 [00:28<00:28, 14.41s/it] 75%|███████▌  | 3/4 [00:43<00:14, 14.52s/it]100%|██████████| 4/4 [00:57<00:00, 14.47s/it]100%|██████████| 4/4 [00:57<00:00, 14.45s/it]
+  Saved: /home/dung/Desktop/kids-tiktok-agent/out/2026-04-22_08-00-01/images/scene_10.png
+
+Images ready for review:
+{
+  "workdir": "/home/dung/Desktop/kids-tiktok-agent/out/2026-04-22_08-00-01",
+  "title": "Benny Bunny\u2019s Gentle Lesson",
+  "scene_count": 10,
+  "hook_image_path": "/home/dung/Desktop/kids-tiktok-agent/out/2026-04-22_08-00-01/images/hook.png",
+  "first_scene_image_path": "/home/dung/Desktop/kids-tiktok-agent/out/2026-04-22_08-00-01/images/scene_01.png"
+}
+Review the images, then say 'go ahead' to continue or 'regenerate scene N ...' to redo one scene.
+[auto_generate] Theme: caring for a sick friend or pet
+`CLIPImageProcessor` requires torchvision (not installed); falling back to `CLIPImageProcessorPil` for backward compatibility. Install torchvision to use the default backend, or import `CLIPImageProcessorPil` directly to silence this warning.
+`SiglipImageProcessor` requires torchvision (not installed); falling back to `SiglipImageProcessorPil` for backward compatibility. Install torchvision to use the default backend, or import `SiglipImageProcessorPil` directly to silence this warning.
+Theme: caring for a sick friend or pet
+Generated new story config: Benny Bunny’s Cozy Day
+Wrote: /home/dung/Desktop/kids-tiktok-agent/story_config.json
+Voice: TYKLc7ViOIGE13dSZYlK
+Loading story from story_config.json
+Generating character reference images...
+Loading FLUX.1-schnell (this takes a minute)...
+Loading pipeline components...:   0%|          | 0/7 [00:00<?, ?it/s]
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s][A
+Loading checkpoint shards:  33%|███▎      | 1/3 [00:00<00:00,  8.32it/s][ALoading checkpoint shards: 100%|██████████| 3/3 [00:00<00:00, 15.69it/s]
+Loading pipeline components...:  14%|█▍        | 1/7 [00:00<00:02,  2.76it/s]
+Loading weights:   0%|          | 0/196 [00:00<?, ?it/s][ALoading weights: 100%|██████████| 196/196 [00:00<00:00, 5510.57it/s]
+
+Loading weights:   0%|          | 0/219 [00:00<?, ?it/s][A
+Loading weights:  53%|█████▎    | 117/219 [00:00<00:00, 1166.59it/s][ALoading weights: 100%|██████████| 219/219 [00:00<00:00, 1743.51it/s]
+Loading pipeline components...:  57%|█████▋    | 4/7 [00:00<00:00,  7.35it/s]Loading pipeline components...: 100%|██████████| 7/7 [00:00<00:00, 11.24it/s]Loading pipeline components...: 100%|██████████| 7/7 [00:00<00:00,  9.24it/s]
+Model loaded.
+  Generating character reference: Benny Bunny...
+  0%|          | 0/4 [00:00<?, ?it/s] 25%|██▌       | 1/4 [00:13<00:41, 13.80s/it] 50%|█████     | 2/4 [00:27<00:27, 13.88s/it] 75%|███████▌  | 3/4 [00:41<00:13, 13.81s/it]100%|██████████| 4/4 [00:55<00:00, 13.80s/it]100%|██████████| 4/4 [00:55<00:00, 13.81s/it]
+    Saved: /home/dung/Desktop/kids-tiktok-agent/out/2026-04-23_08-00-01/images/ref_benny_bunny.png
+  Generating character reference: Little Hoot...
+  0%|          | 0/4 [00:00<?, ?it/s] 25%|██▌       | 1/4 [00:13<00:41, 13.71s/it] 50%|█████     | 2/4 [00:27<00:27, 13.92s/it] 75%|███████▌  | 3/4 [00:41<00:13, 13.85s/it]100%|██████████| 4/4 [00:55<00:00, 13.82s/it]100%|██████████| 4/4 [00:55<00:00, 13.83s/it]
+    Saved: /home/dung/Desktop/kids-tiktok-agent/out/2026-04-23_08-00-01/images/ref_little_hoot.png
+  Generating character reference: Foxy...
+  0%|          | 0/4 [00:00<?, ?it/s] 25%|██▌       | 1/4 [00:13<00:41, 13.78s/it] 50%|█████     | 2/4 [00:27<00:27, 13.97s/it] 75%|███████▌  | 3/4 [00:41<00:13, 13.93s/it]100%|██████████| 4/4 [00:55<00:00, 13.87s/it]100%|██████████| 4/4 [00:55<00:00, 13.88s/it]
+    Saved: /home/dung/Desktop/kids-tiktok-agent/out/2026-04-23_08-00-01/images/ref_foxy.png
+  Generating character reference: Bella Bear...
+  0%|          | 0/4 [00:00<?, ?it/s] 25%|██▌       | 1/4 [00:13<00:41, 13.78s/it] 50%|█████     | 2/4 [00:27<00:28, 14.03s/it] 75%|███████▌  | 3/4 [00:41<00:13, 13.93s/it]100%|██████████| 4/4 [00:55<00:00, 13.91s/it]100%|██████████| 4/4 [00:55<00:00, 13.92s/it]
+    Saved: /home/dung/Desktop/kids-tiktok-agent/out/2026-04-23_08-00-01/images/ref_bella_bear.png
+Generating hook image...
+Loading FLUX.1-schnell + IP-Adapter (this takes a minute)...
+Loading weights:   0%|          | 0/392 [00:00<?, ?it/s]Loading weights:  15%|█▌        | 59/392 [00:00<00:00, 520.84it/s]Loading weights:  33%|███▎      | 129/392 [00:00<00:00, 620.49it/s]Loading weights:  49%|████▉     | 192/392 [00:00<00:00, 529.97it/s]Loading weights:  64%|██████▎   | 249/392 [00:00<00:00, 515.79it/s]Loading weights:  80%|███████▉  | 313/392 [00:00<00:00, 550.13it/s]Loading weights:  95%|█████████▍| 372/392 [00:00<00:00, 562.54it/s]Loading weights: 100%|██████████| 392/392 [00:00<00:00, 564.35it/s]
+[1mCLIPVisionModelWithProjection LOAD REPORT[0m from: openai/clip-vit-large-patch14
+Key                                                          | Status     |  | 
+-------------------------------------------------------------+------------+--+-
+text_model.encoder.layers.{0...11}.mlp.fc2.bias              | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm2.bias          | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.out_proj.bias   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.out_proj.weight | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.v_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.q_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.q_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.k_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.v_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc1.bias              | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm2.weight        | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc1.weight            | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.weight            | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm1.bias          | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.k_proj.bias     | UNEXPECTED |  | 
+text_model.embeddings.token_embedding.weight                 | UNEXPECTED |  | 
+text_model.final_layer_norm.bias                             | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm1.weight        | UNEXPECTED |  | 
+vision_model.embeddings.position_ids                         | UNEXPECTED |  | 
+text_projection.weight                                       | UNEXPECTED |  | 
+text_model.final_layer_norm.weight                           | UNEXPECTED |  | 
+text_model.embeddings.position_embedding.weight              | UNEXPECTED |  | 
+logit_scale                                                  | UNEXPECTED |  | 
+text_model.embeddings.position_ids                           | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+Loading pipeline components...:   0%|          | 0/7 [00:00<?, ?it/s]
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s][A
+Loading checkpoint shards:  67%|██████▋   | 2/3 [00:00<00:00, 16.82it/s][ALoading checkpoint shards: 100%|██████████| 3/3 [00:00<00:00, 23.58it/s]
+Loading pipeline components...:  14%|█▍        | 1/7 [00:00<00:00,  6.13it/s]
+Loading weights:   0%|          | 0/196 [00:00<?, ?it/s][ALoading weights: 100%|██████████| 196/196 [00:00<00:00, 3791.95it/s]
+
+Loading weights:   0%|          | 0/219 [00:00<?, ?it/s][A
+Loading weights:  56%|█████▌    | 123/219 [00:00<00:00, 1229.73it/s][ALoading weights: 100%|██████████| 219/219 [00:00<00:00, 1809.94it/s]
+Loading pipeline components...:  57%|█████▋    | 4/7 [00:00<00:00,  9.65it/s]Loading pipeline components...: 100%|██████████| 7/7 [00:00<00:00, 13.55it/s]Loading pipeline components...: 100%|██████████| 7/7 [00:00<00:00, 12.14it/s]
+Token indices sequence length is longer than the specified maximum sequence length for this model (94 > 77). Running this sequence through the model will result in indexing errors
+The following part of your input was truncated because CLIP can only handle sequences up to 77 tokens: [': benny bunny, little hoot, foxy, bella bear, calm empty bottom strip, no characters']
+Model loaded.
+  0%|          | 0/4 [00:00<?, ?it/s] 25%|██▌       | 1/4 [00:14<00:44, 14.91s/it] 50%|█████     | 2/4 [00:29<00:29, 14.94s/it] 75%|███████▌  | 3/4 [00:44<00:14, 14.94s/it]100%|██████████| 4/4 [00:59<00:00, 14.73s/it]100%|██████████| 4/4 [00:59<00:00, 14.81s/it]
+  Saved: /home/dung/Desktop/kids-tiktok-agent/out/2026-04-23_08-00-01/images/hook.png
+Loading FLUX.1-schnell + IP-Adapter (this takes a minute)...
+Loading weights:   0%|          | 0/392 [00:00<?, ?it/s]Loading weights:  15%|█▍        | 57/392 [00:00<00:00, 569.77it/s]Loading weights:  29%|██▉       | 114/392 [00:00<00:00, 527.49it/s]Loading weights:  43%|████▎     | 169/392 [00:00<00:00, 507.44it/s]Loading weights:  59%|█████▉    | 233/392 [00:00<00:00, 541.56it/s]Loading weights:  75%|███████▌  | 295/392 [00:00<00:00, 568.03it/s]Loading weights:  91%|█████████ | 355/392 [00:00<00:00, 575.59it/s]Loading weights: 100%|██████████| 392/392 [00:00<00:00, 570.95it/s]
+[1mCLIPVisionModelWithProjection LOAD REPORT[0m from: openai/clip-vit-large-patch14
+Key                                                          | Status     |  | 
+-------------------------------------------------------------+------------+--+-
+text_model.encoder.layers.{0...11}.mlp.fc2.bias              | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm2.bias          | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.out_proj.bias   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.out_proj.weight | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.v_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.q_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.q_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.k_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.v_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc1.bias              | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm2.weight        | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc1.weight            | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.weight            | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm1.bias          | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.k_proj.bias     | UNEXPECTED |  | 
+text_model.embeddings.token_embedding.weight                 | UNEXPECTED |  | 
+text_model.final_layer_norm.bias                             | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm1.weight        | UNEXPECTED |  | 
+vision_model.embeddings.position_ids                         | UNEXPECTED |  | 
+text_projection.weight                                       | UNEXPECTED |  | 
+text_model.final_layer_norm.weight                           | UNEXPECTED |  | 
+text_model.embeddings.position_embedding.weight              | UNEXPECTED |  | 
+logit_scale                                                  | UNEXPECTED |  | 
+text_model.embeddings.position_ids                           | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+Loading pipeline components...:   0%|          | 0/7 [00:00<?, ?it/s]
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s][ALoading checkpoint shards: 100%|██████████| 3/3 [00:00<00:00, 55.55it/s]
+
+Loading weights:   0%|          | 0/196 [00:00<?, ?it/s][ALoading weights: 100%|██████████| 196/196 [00:00<00:00, 4974.25it/s]
+Loading pipeline components...:  43%|████▎     | 3/7 [00:00<00:00, 18.30it/s]
+Loading weights:   0%|          | 0/219 [00:00<?, ?it/s][ALoading weights: 100%|██████████| 219/219 [00:00<00:00, 2646.23it/s]
+Loading pipeline components...:  71%|███████▏  | 5/7 [00:00<00:00, 14.12it/s]Loading pipeline components...: 100%|██████████| 7/7 [00:00<00:00, 15.69it/s]Loading pipeline components...: 100%|██████████| 7/7 [00:00<00:00, 15.66it/s]
+Token indices sequence length is longer than the specified maximum sequence length for this model (79 > 77). Running this sequence through the model will result in indexing errors
+The following part of your input was truncated because CLIP can only handle sequences up to 77 tokens: ['strip, no characters']
+Model loaded.
+Generating scene 1/10: A Sad Little Hoot...
+  0%|          | 0/4 [00:00<?, ?it/s] 25%|██▌       | 1/4 [00:14<00:44, 14.86s/it] 50%|█████     | 2/4 [00:29<00:29, 14.87s/it] 75%|███████▌  | 3/4 [00:44<00:14, 14.82s/it]100%|██████████| 4/4 [00:58<00:00, 14.69s/it]100%|██████████| 4/4 [00:58<00:00, 14.75s/it]
+  Saved: /home/dung/Desktop/kids-tiktok-agent/out/2026-04-23_08-00-01/images/scene_01.png
+Generating scene 2/10: Benny’s Big Idea...
+  0%|          | 0/4 [00:00<?, ?it/s] 25%|██▌       | 1/4 [00:14<00:43, 14.47s/it] 50%|█████     | 2/4 [00:29<00:29, 14.60s/it] 75%|███████▌  | 3/4 [00:43<00:14, 14.62s/it]100%|██████████| 4/4 [00:58<00:00, 14.48s/it]100%|██████████| 4/4 [00:58<00:00, 14.52s/it]
+  Saved: /home/dung/Desktop/kids-tiktok-agent/out/2026-04-23_08-00-01/images/scene_02.png
+Generating scene 3/10: Foxy’s Warm Tea...
+  0%|          | 0/4 [00:00<?, ?it/s] 25%|██▌       | 1/4 [00:14<00:42, 14.22s/it] 50%|█████     | 2/4 [00:28<00:28, 14.31s/it] 75%|███████▌  | 3/4 [00:43<00:14, 14.36s/it]100%|██████████| 4/4 [00:57<00:00, 14.29s/it]100%|██████████| 4/4 [00:57<00:00, 14.30s/it]
+  Saved: /home/dung/Desktop/kids-tiktok-agent/out/2026-04-23_08-00-01/images/scene_03.png
+Generating scene 4/10: Bella’s Healthy Snacks...
+  0%|          | 0/4 [00:00<?, ?it/s] 25%|██▌       | 1/4 [00:14<00:42, 14.28s/it] 50%|█████     | 2/4 [00:28<00:28, 14.35s/it] 75%|███████▌  | 3/4 [00:43<00:14, 14.39s/it]100%|██████████| 4/4 [00:57<00:00, 14.39s/it]100%|██████████| 4/4 [00:57<00:00, 14.38s/it]
+  Saved: /home/dung/Desktop/kids-tiktok-agent/out/2026-04-23_08-00-01/images/scene_04.png
+Generating scene 5/10: A Cozy Nest...
+  0%|          | 0/4 [00:00<?, ?it/s] 25%|██▌       | 1/4 [00:14<00:42, 14.15s/it] 50%|█████     | 2/4 [00:28<00:28, 14.33s/it] 75%|███████▌  | 3/4 [00:42<00:14, 14.29s/it]100%|██████████| 4/4 [00:57<00:00, 14.24s/it]100%|██████████| 4/4 [00:57<00:00, 14.26s/it]
+  Saved: /home/dung/Desktop/kids-tiktok-agent/out/2026-04-23_08-00-01/images/scene_05.png
+Generating scene 6/10: Storytime...
+  0%|          | 0/4 [00:00<?, ?it/s] 25%|██▌       | 1/4 [00:14<00:42, 14.13s/it] 50%|█████     | 2/4 [00:28<00:28, 14.30s/it] 75%|███████▌  | 3/4 [00:42<00:14, 14.30s/it]100%|██████████| 4/4 [00:56<00:00, 14.24s/it]100%|██████████| 4/4 [00:56<00:00, 14.25s/it]
+  Saved: /home/dung/Desktop/kids-tiktok-agent/out/2026-04-23_08-00-01/images/scene_06.png
+Generating scene 7/10: A Gentle Check-In...
+  0%|          | 0/4 [00:00<?, ?it/s] 25%|██▌       | 1/4 [00:14<00:43, 14.53s/it] 50%|█████     | 2/4 [00:28<00:28, 14.42s/it] 75%|███████▌  | 3/4 [00:43<00:14, 14.35s/it]100%|██████████| 4/4 [00:57<00:00, 14.35s/it]100%|██████████| 4/4 [00:57<00:00, 14.37s/it]
+  Saved: /home/dung/Desktop/kids-tiktok-agent/out/2026-04-23_08-00-01/images/scene_07.png
+Generating scene 8/10: Friends Together...
+  0%|          | 0/4 [00:00<?, ?it/s] 25%|██▌       | 1/4 [00:14<00:42, 14.08s/it] 50%|█████     | 2/4 [00:29<00:29, 14.73s/it] 75%|███████▌  | 3/4 [00:43<00:14, 14.66s/it]100%|██████████| 4/4 [00:58<00:00, 14.82s/it]100%|██████████| 4/4 [00:58<00:00, 14.73s/it]
+  Saved: /home/dung/Desktop/kids-tiktok-agent/out/2026-04-23_08-00-01/images/scene_08.png
+Generating scene 9/10: Little Hoot’s Smile...
+  0%|          | 0/4 [00:00<?, ?it/s] 25%|██▌       | 1/4 [00:14<00:42, 14.23s/it] 50%|█████     | 2/4 [00:28<00:28, 14.22s/it] 75%|███████▌  | 3/4 [00:42<00:14, 14.21s/it]100%|██████████| 4/4 [00:57<00:00, 14.40s/it]100%|██████████| 4/4 [00:57<00:00, 14.33s/it]
+  Saved: /home/dung/Desktop/kids-tiktok-agent/out/2026-04-23_08-00-01/images/scene_09.png
+Generating scene 10/10: Kindness Matters...
+  0%|          | 0/4 [00:00<?, ?it/s] 25%|██▌       | 1/4 [00:14<00:44, 14.80s/it] 50%|█████     | 2/4 [00:29<00:29, 14.51s/it] 75%|███████▌  | 3/4 [00:43<00:14, 14.51s/it]100%|██████████| 4/4 [00:58<00:00, 14.47s/it]100%|██████████| 4/4 [00:58<00:00, 14.50s/it]
+  Saved: /home/dung/Desktop/kids-tiktok-agent/out/2026-04-23_08-00-01/images/scene_10.png
+
+Images ready for review:
+{
+  "workdir": "/home/dung/Desktop/kids-tiktok-agent/out/2026-04-23_08-00-01",
+  "title": "Benny Bunny\u2019s Cozy Day",
+  "scene_count": 10,
+  "hook_image_path": "/home/dung/Desktop/kids-tiktok-agent/out/2026-04-23_08-00-01/images/hook.png",
+  "first_scene_image_path": "/home/dung/Desktop/kids-tiktok-agent/out/2026-04-23_08-00-01/images/scene_01.png"
+}
+Review the images, then say 'go ahead' to continue or 'regenerate scene N ...' to redo one scene.

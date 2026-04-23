@@ -164,7 +164,7 @@ class StoryAgent(Agent):
 
 
 # Appended to every scene prompt so FLUX leaves a calm strip at the bottom for subtitles.
-_SUBTITLE_SAFE = "bottom eighth of image is calm plain background with no characters or objects, clear space for subtitle text"
+_SUBTITLE_SAFE = "calm empty bottom strip, no characters"
 
 
 class PromptConsistencyAgent(Agent):
