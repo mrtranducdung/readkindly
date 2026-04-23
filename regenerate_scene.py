@@ -68,9 +68,11 @@ def main() -> int:
         hook_path = images_dir / "hook.png"
         prompt = story.hook_image_prompt
         if char_refs:
+            image_agent._load_pipeline(use_ip_adapter=True)
             hook_ref = image_agent._composite_refs(list(char_refs.values()))
             image_agent._render_image(prompt, hook_path, ref_image=hook_ref, ip_scale=args.ip_scale)
         else:
+            image_agent._load_pipeline(use_ip_adapter=False)
             image_agent._render_image(prompt, hook_path)
         print(f"  Saved: {hook_path}")
         save_review_state(workdir, "images_ready",

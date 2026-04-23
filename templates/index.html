@@ -380,6 +380,11 @@ body { font-family:'Nunito',system-ui,sans-serif; background:var(--bg); color:#f
 .rq-thumb-label { text-align:center;font-size:.55rem;opacity:.45;margin-top:2px; }
 .rq-video { width:100%;border-radius:12px;margin:12px 0;max-height:420px;background:#000; }
 .rq-actions { display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:4px; }
+.rq-regen-banner { display:flex;align-items:center;gap:8px;margin-top:10px;padding:8px 12px;
+  background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.3);border-radius:10px;
+  font-size:.78rem;color:#c4b5fd; }
+.rq-regen-banner .rq-spinner-sm { width:14px;height:14px;border:2px solid rgba(255,255,255,.15);
+  border-top-color:#a78bfa;border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0; }
 .rq-regen-form { display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08); }
 .rq-regen-form input, .rq-regen-form select {
   padding:7px 10px;background:rgba(255,255,255,.07);border:1px solid var(--border);
@@ -892,12 +897,15 @@ function showLogin() {
   document.getElementById('admin-dash').style.display = 'none';
   document.getElementById('logout-btn').style.display = 'none';
 }
+let _rqPollTimer = null;
 async function showDash() {
   document.getElementById('login-card').style.display = 'none';
   document.getElementById('admin-dash').style.display = 'block';
   document.getElementById('logout-btn').style.display = '';
   loadReviewQueue();
   loadAdminList();
+  if (_rqPollTimer) clearInterval(_rqPollTimer);
+  _rqPollTimer = setInterval(loadReviewQueue, 30000);
 }
 async function doLogin() {
   const pw = document.getElementById('login-pw').value;
@@ -907,6 +915,7 @@ async function doLogin() {
 }
 async function doLogout() {
   await api('POST', '/api/admin/logout');
+  if (_rqPollTimer) { clearInterval(_rqPollTimer); _rqPollTimer = null; }
   showLogin();
   document.getElementById('login-pw').value = '';
 }
@@ -1277,6 +1286,24 @@ function renderReviewCard(run) {
     })
   ].join('');
 
+  const queue = run.regen_queue || [];
+  const hasPendingRegen = queue.length > 0;
+
+  const regenBanner = hasPendingRegen ? (() => {
+    const labels = queue.map(q => {
+      const s = q.scene;
+      return s === 'hook' ? 'Hook' : s === 'outro' ? 'Outro' : `Scene ${s}`;
+    });
+    return `<div class="rq-regen-banner">
+      <div class="rq-spinner-sm"></div>
+      <span>Regenerating: <strong>${labels.join(', ')}</strong></span>
+    </div>`;
+  })() : '';
+
+  const approveBtn = hasPendingRegen
+    ? `<button class="btn btn-primary btn-sm" disabled style="opacity:.4;cursor:not-allowed" title="Wait for regeneration to finish">✅ Approve &amp; Publish</button>`
+    : `<button class="btn btn-primary btn-sm" onclick="approveRun('${run.run_id}')">✅ Approve &amp; Publish</button>`;
+
   return `
   <div class="rq-card" id="rq-card-${run.run_id}">
     <div class="rq-header">
@@ -1288,8 +1315,9 @@ function renderReviewCard(run) {
     </div>
     ${videoHtml}
     <div class="rq-strip-wrap"><div class="rq-strip">${imgSrcs}</div></div>
+    ${regenBanner}
     <div class="rq-actions">
-      <button class="btn btn-primary btn-sm" onclick="approveRun('${run.run_id}')">✅ Approve &amp; Publish</button>
+      ${approveBtn}
       <button class="btn btn-ghost btn-sm" style="color:#e55" onclick="rejectRun('${run.run_id}')">🗑 Reject</button>
     </div>
     <div class="rq-regen-form">
@@ -1338,7 +1366,8 @@ async function requestRegen(runId) {
   if (r.error) { toast('❌ ' + r.error, 'err'); return; }
   guideEl.value = '';
   const label = scene === 'hook' ? 'Hook' : scene === 'outro' ? 'Outro' : `Scene ${scene}`;
-  toast(`🔄 ${label} regeneration requested — watcher will pick it up shortly.`, 'ok');
+  toast(`🔄 ${label} added to regeneration queue (${r.queue_length} pending).`, 'ok');
+  loadReviewQueue();
 }
 </script>
 <footer style="text-align:center;padding:18px 0 12px;font-size:12px;color:#aaa;border-top:1px solid #222;margin-top:24px;">

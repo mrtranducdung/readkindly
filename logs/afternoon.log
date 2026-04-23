@@ -166,3 +166,333 @@ Images ready for review:
   "first_scene_image_path": "/home/dung/Desktop/kids-tiktok-agent/out/2026-04-22_15-00-02/images/scene_01.png"
 }
 Review the images, then say 'go ahead' to continue or 'regenerate scene N ...' to redo one scene.
+[auto_generate] Theme: asking for help when you need it
+`CLIPImageProcessor` requires torchvision (not installed); falling back to `CLIPImageProcessorPil` for backward compatibility. Install torchvision to use the default backend, or import `CLIPImageProcessorPil` directly to silence this warning.
+`SiglipImageProcessor` requires torchvision (not installed); falling back to `SiglipImageProcessorPil` for backward compatibility. Install torchvision to use the default backend, or import `SiglipImageProcessorPil` directly to silence this warning.
+Theme: asking for help when you need it
+Generated new story config: Benny Bunny’s Big Ask
+Wrote: /home/dung/Desktop/kids-tiktok-agent/story_config.json
+Voice: JBFqnCBsd6RMkjVDRZzb
+Loading story from story_config.json
+Generating character reference images...
+Loading FLUX.1-schnell (this takes a minute)...
+Loading pipeline components...:   0%|          | 0/7 [00:00<?, ?it/s]
+Loading weights:   0%|          | 0/219 [00:00<?, ?it/s][ALoading weights: 100%|██████████| 219/219 [00:00<00:00, 2436.82it/s]
+Loading pipeline components...:  29%|██▊       | 2/7 [00:00<00:00,  7.24it/s]Loading pipeline components...:  57%|█████▋    | 4/7 [00:00<00:00, 10.76it/s]
+Loading weights:   0%|          | 0/196 [00:00<?, ?it/s][ALoading weights: 100%|██████████| 196/196 [00:00<00:00, 5228.84it/s]
+
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s][A
+Loading checkpoint shards:  33%|███▎      | 1/3 [00:00<00:00,  9.35it/s][A
+Loading checkpoint shards:  67%|██████▋   | 2/3 [00:00<00:00,  8.61it/s][ALoading checkpoint shards: 100%|██████████| 3/3 [00:00<00:00, 10.77it/s]
+Loading pipeline components...:  86%|████████▌ | 6/7 [00:00<00:00,  6.78it/s]Loading pipeline components...: 100%|██████████| 7/7 [00:00<00:00,  8.16it/s]
+Model loaded.
+  Generating character reference: Benny Bunny...
+  0%|          | 0/4 [00:00<?, ?it/s] 25%|██▌       | 1/4 [00:13<00:40, 13.43s/it] 50%|█████     | 2/4 [00:27<00:27, 13.70s/it] 75%|███████▌  | 3/4 [00:40<00:13, 13.56s/it]100%|██████████| 4/4 [00:53<00:00, 13.15s/it]100%|██████████| 4/4 [00:53<00:00, 13.31s/it]
+    Saved: /home/dung/Desktop/kids-tiktok-agent/out/2026-04-23_15-00-02/images/ref_benny_bunny.png
+  Generating character reference: Oliver Owl...
+  0%|          | 0/4 [00:00<?, ?it/s] 25%|██▌       | 1/4 [00:12<00:37, 12.36s/it] 50%|█████     | 2/4 [00:25<00:25, 12.67s/it] 75%|███████▌  | 3/4 [00:37<00:12, 12.71s/it]100%|██████████| 4/4 [00:50<00:00, 12.63s/it]100%|██████████| 4/4 [00:50<00:00, 12.63s/it]
+    Saved: /home/dung/Desktop/kids-tiktok-agent/out/2026-04-23_15-00-02/images/ref_oliver_owl.png
+  Generating character reference: Fiona Fox...
+  0%|          | 0/4 [00:00<?, ?it/s] 25%|██▌       | 1/4 [00:12<00:37, 12.62s/it] 50%|█████     | 2/4 [00:25<00:25, 12.68s/it] 75%|███████▌  | 3/4 [00:38<00:12, 12.70s/it]100%|██████████| 4/4 [00:50<00:00, 12.64s/it]100%|██████████| 4/4 [00:50<00:00, 12.66s/it]
+    Saved: /home/dung/Desktop/kids-tiktok-agent/out/2026-04-23_15-00-02/images/ref_fiona_fox.png
+  Generating character reference: Bella Bunny...
+  0%|          | 0/4 [00:00<?, ?it/s] 25%|██▌       | 1/4 [00:13<00:39, 13.12s/it] 50%|█████     | 2/4 [00:26<00:25, 12.99s/it] 75%|███████▌  | 3/4 [00:39<00:12, 12.99s/it]100%|██████████| 4/4 [00:52<00:00, 13.00s/it]100%|██████████| 4/4 [00:52<00:00, 13.01s/it]
+    Saved: /home/dung/Desktop/kids-tiktok-agent/out/2026-04-23_15-00-02/images/ref_bella_bunny.png
+Generating hook image...
+Loading FLUX.1-schnell + IP-Adapter (this takes a minute)...
+Loading weights:   0%|          | 0/392 [00:00<?, ?it/s]Loading weights:  15%|█▍        | 57/392 [00:00<00:00, 507.73it/s]Loading weights:  28%|██▊       | 108/392 [00:00<00:00, 498.87it/s]Loading weights:  43%|████▎     | 169/392 [00:00<00:00, 524.87it/s]Loading weights:  59%|█████▉    | 233/392 [00:00<00:00, 547.62it/s]Loading weights:  76%|███████▌  | 297/392 [00:00<00:00, 564.30it/s]Loading weights:  92%|█████████▏| 361/392 [00:00<00:00, 574.71it/s]Loading weights: 100%|██████████| 392/392 [00:00<00:00, 571.26it/s]
+[1mCLIPVisionModelWithProjection LOAD REPORT[0m from: openai/clip-vit-large-patch14
+Key                                                          | Status     |  | 
+-------------------------------------------------------------+------------+--+-
+text_model.encoder.layers.{0...11}.self_attn.v_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.k_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.out_proj.weight | UNEXPECTED |  | 
+text_model.final_layer_norm.bias                             | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.k_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.q_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.out_proj.bias   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm1.bias          | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm1.weight        | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc1.weight            | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.q_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm2.bias          | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc1.bias              | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.v_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.weight            | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.bias              | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm2.weight        | UNEXPECTED |  | 
+text_model.embeddings.token_embedding.weight                 | UNEXPECTED |  | 
+logit_scale                                                  | UNEXPECTED |  | 
+text_projection.weight                                       | UNEXPECTED |  | 
+text_model.embeddings.position_embedding.weight              | UNEXPECTED |  | 
+text_model.embeddings.position_ids                           | UNEXPECTED |  | 
+text_model.final_layer_norm.weight                           | UNEXPECTED |  | 
+vision_model.embeddings.position_ids                         | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+Loading pipeline components...:   0%|          | 0/7 [00:00<?, ?it/s]
+Loading weights:   0%|          | 0/219 [00:00<?, ?it/s][A
+Loading weights:  69%|██████▉   | 152/219 [00:00<00:00, 1519.70it/s][ALoading weights: 100%|██████████| 219/219 [00:00<00:00, 1698.86it/s]
+Loading pipeline components...:  29%|██▊       | 2/7 [00:00<00:00,  9.98it/s]Loading pipeline components...:  57%|█████▋    | 4/7 [00:00<00:00, 13.93it/s]
+Loading weights:   0%|          | 0/196 [00:00<?, ?it/s][ALoading weights: 100%|██████████| 196/196 [00:00<00:00, 5255.82it/s]
+
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s][A
+Loading checkpoint shards:  67%|██████▋   | 2/3 [00:00<00:00, 17.39it/s][ALoading checkpoint shards: 100%|██████████| 3/3 [00:00<00:00, 24.22it/s]
+Loading pipeline components...:  86%|████████▌ | 6/7 [00:00<00:00, 11.07it/s]Loading pipeline components...: 100%|██████████| 7/7 [00:00<00:00, 12.46it/s]
+Token indices sequence length is longer than the specified maximum sequence length for this model (94 > 77). Running this sequence through the model will result in indexing errors
+The following part of your input was truncated because CLIP can only handle sequences up to 77 tokens: ['fox, bella bunny, plain solid color bottom margin, no text, no words, no letters']
+Model loaded.
+  0%|          | 0/4 [00:00<?, ?it/s] 25%|██▌       | 1/4 [00:13<00:41, 13.98s/it] 50%|█████     | 2/4 [00:27<00:27, 13.96s/it] 75%|███████▌  | 3/4 [00:41<00:13, 13.98s/it]100%|██████████| 4/4 [00:56<00:00, 14.13s/it]100%|██████████| 4/4 [00:56<00:00, 14.07s/it]
+  Saved: /home/dung/Desktop/kids-tiktok-agent/out/2026-04-23_15-00-02/images/hook.png
+Loading FLUX.1-schnell + IP-Adapter (this takes a minute)...
+Loading weights:   0%|          | 0/392 [00:00<?, ?it/s]Loading weights:  15%|█▍        | 57/392 [00:00<00:00, 533.95it/s]Loading weights:  28%|██▊       | 111/392 [00:00<00:00, 535.84it/s]Loading weights:  43%|████▎     | 169/392 [00:00<00:00, 526.59it/s]Loading weights:  58%|█████▊    | 227/392 [00:00<00:00, 542.62it/s]Loading weights:  72%|███████▏  | 283/392 [00:00<00:00, 541.72it/s]Loading weights:  88%|████████▊ | 345/392 [00:00<00:00, 561.24it/s]Loading weights: 100%|██████████| 392/392 [00:00<00:00, 568.75it/s]
+[1mCLIPVisionModelWithProjection LOAD REPORT[0m from: openai/clip-vit-large-patch14
+Key                                                          | Status     |  | 
+-------------------------------------------------------------+------------+--+-
+text_model.encoder.layers.{0...11}.self_attn.v_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.k_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.out_proj.weight | UNEXPECTED |  | 
+text_model.final_layer_norm.bias                             | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.k_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.q_proj.weight   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.out_proj.bias   | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm1.bias          | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm1.weight        | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc1.weight            | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.q_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm2.bias          | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc1.bias              | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.self_attn.v_proj.bias     | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.weight            | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.mlp.fc2.bias              | UNEXPECTED |  | 
+text_model.encoder.layers.{0...11}.layer_norm2.weight        | UNEXPECTED |  | 
+text_model.embeddings.token_embedding.weight                 | UNEXPECTED |  | 
+logit_scale                                                  | UNEXPECTED |  | 
+text_projection.weight                                       | UNEXPECTED |  | 
+text_model.embeddings.position_embedding.weight              | UNEXPECTED |  | 
+text_model.embeddings.position_ids                           | UNEXPECTED |  | 
+text_model.final_layer_norm.weight                           | UNEXPECTED |  | 
+vision_model.embeddings.position_ids                         | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+Loading pipeline components...:   0%|          | 0/7 [00:00<?, ?it/s]
+Loading weights:   0%|          | 0/219 [00:00<?, ?it/s][A
+Loading weights:  60%|██████    | 132/219 [00:00<00:00, 1316.83it/s][ALoading weights: 100%|██████████| 219/219 [00:00<00:00, 1725.79it/s]
+Loading pipeline components...:  29%|██▊       | 2/7 [00:00<00:00, 10.75it/s]Loading pipeline components...:  57%|█████▋    | 4/7 [00:00<00:00, 14.00it/s]
+Loading weights:   0%|          | 0/196 [00:00<?, ?it/s][ALoading weights: 100%|██████████| 196/196 [00:00<00:00, 5902.25it/s]
+
+Loading checkpoint shards:   0%|          | 0/3 [00:00<?, ?it/s][ALoading checkpoint shards: 100%|██████████| 3/3 [00:00<00:00, 58.90it/s]
+Loading pipeline components...:  86%|████████▌ | 6/7 [00:00<00:00, 13.37it/s]Loading pipeline components...: 100%|██████████| 7/7 [00:00<00:00, 14.26it/s]
+Model loaded.
+Generating scene 1/10: The Tall Carrot...
+  0%|          | 0/4 [00:00<?, ?it/s] 25%|██▌       | 1/4 [00:13<00:41, 13.81s/it] 50%|█████     | 2/4 [00:27<00:27, 13.88s/it] 75%|███████▌  | 3/4 [00:41<00:13, 13.74s/it]100%|██████████| 4/4 [00:54<00:00, 13.62s/it]100%|██████████| 4/4 [00:54<00:00, 13.69s/it]
+  Saved: /home/dung/Desktop/kids-tiktok-agent/out/2026-04-23_15-00-02/images/scene_01.png
+Generating scene 2/10: Jumping High...
+  0%|          | 0/4 [00:00<?, ?it/s] 25%|██▌       | 1/4 [00:13<00:40, 13.41s/it] 50%|█████     | 2/4 [00:27<00:27, 13.70s/it] 75%|███████▌  | 3/4 [00:41<00:13, 13.95s/it]100%|██████████| 4/4 [00:55<00:00, 13.89s/it]100%|██████████| 4/4 [00:55<00:00, 13.84s/it]
+  Saved: /home/dung/Desktop/kids-tiktok-agent/out/2026-04-23_15-00-02/images/scene_02.png
+Generating scene 3/10: A Little Too Far...
+  0%|          | 0/4 [00:00<?, ?it/s] 25%|██▌       | 1/4 [00:13<00:41, 13.67s/it] 50%|█████     | 2/4 [00:27<00:27, 13.76s/it] 75%|███████▌  | 3/4 [00:41<00:13, 13.77s/it]100%|██████████| 4/4 [00:54<00:00, 13.66s/it]100%|██████████| 4/4 [00:54<00:00, 13.69s/it]
+  Saved: /home/dung/Desktop/kids-tiktok-agent/out/2026-04-23_15-00-02/images/scene_03.png
+Generating scene 4/10: Stuck in the Air...
+  0%|          | 0/4 [00:00<?, ?it/s] 25%|██▌       | 1/4 [00:13<00:40, 13.46s/it] 50%|█████     | 2/4 [00:27<00:27, 13.79s/it] 75%|███████▌  | 3/4 [00:41<00:13, 13.96s/it]100%|██████████| 4/4 [00:55<00:00, 13.86s/it]100%|██████████| 4/4 [00:55<00:00, 13.84s/it]
+Token indices sequence length is longer than the specified maximum sequence length for this model (79 > 77). Running this sequence through the model will result in indexing errors
+The following part of your input was truncated because CLIP can only handle sequences up to 77 tokens: ['no letters']
+  Saved: /home/dung/Desktop/kids-tiktok-agent/out/2026-04-23_15-00-02/images/scene_04.png
+Generating scene 5/10: Friends Watching...
+  0%|          | 0/4 [00:00<?, ?it/s] 25%|██▌       | 1/4 [00:13<00:40, 13.53s/it] 50%|█████     | 2/4 [00:27<00:27, 13.67s/it] 75%|███████▌  | 3/4 [00:41<00:13, 13.72s/it]100%|██████████| 4/4 [00:54<00:00, 13.58s/it]100%|██████████| 4/4 [00:54<00:00, 13.61s/it]
+  Saved: /home/dung/Desktop/kids-tiktok-agent/out/2026-04-23_15-00-02/images/scene_05.png
+Generating scene 6/10: Benny’s Big Decision...
+  0%|          | 0/4 [00:00<?, ?it/s] 25%|██▌       | 1/4 [00:13<00:40, 13.56s/it] 50%|█████     | 2/4 [00:27<00:27, 13.84s/it] 75%|███████▌  | 3/4 [00:41<00:13, 13.75s/it]100%|██████████| 4/4 [00:54<00:00, 13.65s/it]100%|██████████| 4/4 [00:54<00:00, 13.68s/it]
+  Saved: /home/dung/Desktop/kids-tiktok-agent/out/2026-04-23_15-00-02/images/scene_06.png
+Generating scene 7/10: Teamwork Time...
+  0%|          | 0/4 [00:00<?, ?it/s] 25%|██▌       | 1/4 [00:13<00:41, 13.68s/it] 50%|█████     | 2/4 [00:27<00:27, 13.89s/it] 75%|███████▌  | 3/4 [00:41<00:13, 13.73s/it]100%|██████████| 4/4 [00:54<00:00, 13.63s/it]100%|██████████| 4/4 [00:54<00:00, 13.68s/it]
+  Saved: /home/dung/Desktop/kids-tiktok-agent/out/2026-04-23_15-00-02/images/scene_07.png
+Generating scene 8/10: Success!...
+  0%|          | 0/4 [00:00<?, ?it/s] 25%|██▌       | 1/4 [00:14<00:42, 14.25s/it] 50%|█████     | 2/4 [00:27<00:27, 13.90s/it] 75%|███████▌  | 3/4 [00:41<00:13, 13.68s/it]100%|██████████| 4/4 [00:54<00:00, 13.53s/it]100%|██████████| 4/4 [00:54<00:00, 13.65s/it]
+  Saved: /home/dung/Desktop/kids-tiktok-agent/out/2026-04-23_15-00-02/images/scene_08.png
+Generating scene 9/10: Sharing the Prize...
+  0%|          | 0/4 [00:00<?, ?it/s] 25%|██▌       | 1/4 [00:13<00:40, 13.42s/it] 50%|█████     | 2/4 [00:27<00:27, 13.58s/it] 75%|███████▌  | 3/4 [00:40<00:13, 13.52s/it]100%|██████████| 4/4 [00:54<00:00, 13.60s/it]100%|██████████| 4/4 [00:54<00:00, 13.57s/it]
+The following part of your input was truncated because CLIP can only handle sequences up to 77 tokens: ['no letters']
+  Saved: /home/dung/Desktop/kids-tiktok-agent/out/2026-04-23_15-00-02/images/scene_09.png
+Generating scene 10/10: A Happy Lesson...
+  0%|          | 0/4 [00:00<?, ?it/s] 25%|██▌       | 1/4 [00:13<00:40, 13.47s/it] 50%|█████     | 2/4 [00:27<00:27, 13.68s/it] 75%|███████▌  | 3/4 [00:40<00:13, 13.58s/it]100%|██████████| 4/4 [00:53<00:00, 13.40s/it]100%|██████████| 4/4 [00:53<00:00, 13.47s/it]
+  Saved: /home/dung/Desktop/kids-tiktok-agent/out/2026-04-23_15-00-02/images/scene_10.png
+
+Images ready for review:
+{
+  "workdir": "/home/dung/Desktop/kids-tiktok-agent/out/2026-04-23_15-00-02",
+  "title": "Benny Bunny\u2019s Big Ask",
+  "scene_count": 10,
+  "hook_image_path": "/home/dung/Desktop/kids-tiktok-agent/out/2026-04-23_15-00-02/images/hook.png",
+  "first_scene_image_path": "/home/dung/Desktop/kids-tiktok-agent/out/2026-04-23_15-00-02/images/scene_01.png"
+}
+Review the images, then say 'go ahead' to continue or 'regenerate scene N ...' to redo one scene.
+ffmpeg version 4.2.7-0ubuntu0.1 Copyright (c) 2000-2022 the FFmpeg developers
+  built with gcc 9 (Ubuntu 9.4.0-1ubuntu1~20.04.1)
+  configuration: --prefix=/usr --extra-version=0ubuntu0.1 --toolchain=hardened --libdir=/usr/lib/x86_64-linux-gnu --incdir=/usr/include/x86_64-linux-gnu --arch=amd64 --enable-gpl --disable-stripping --enable-avresample --disable-filter=resample --enable-avisynth --enable-gnutls --enable-ladspa --enable-libaom --enable-libass --enable-libbluray --enable-libbs2b --enable-libcaca --enable-libcdio --enable-libcodec2 --enable-libflite --enable-libfontconfig --enable-libfreetype --enable-libfribidi --enable-libgme --enable-libgsm --enable-libjack --enable-libmp3lame --enable-libmysofa --enable-libopenjpeg --enable-libopenmpt --enable-libopus --enable-libpulse --enable-librsvg --enable-librubberband --enable-libshine --enable-libsnappy --enable-libsoxr --enable-libspeex --enable-libssh --enable-libtheora --enable-libtwolame --enable-libvidstab --enable-libvorbis --enable-libvpx --enable-libwavpack --enable-libwebp --enable-libx265 --enable-libxml2 --enable-libxvid --enable-libzmq --enable-libzvbi --enable-lv2 --enable-omx --enable-openal --enable-opencl --enable-opengl --enable-sdl2 --enable-libdc1394 --enable-libdrm --enable-libiec61883 --enable-nvenc --enable-chromaprint --enable-frei0r --enable-libx264 --enable-shared
+  libavutil      56. 31.100 / 56. 31.100
+  libavcodec     58. 54.100 / 58. 54.100
+  libavformat    58. 29.100 / 58. 29.100
+  libavdevice    58.  8.100 / 58.  8.100
+  libavfilter     7. 57.100 /  7. 57.100
+  libavresample   4.  0.  0 /  4.  0.  0
+  libswscale      5.  5.100 /  5.  5.100
+  libswresample   3.  5.100 /  3.  5.100
+  libpostproc    55.  5.100 / 55.  5.100
+[mov,mp4,m4a,3gp,3g2,mj2 @ 0x55bb6bcf5080] Auto-inserting h264_mp4toannexb bitstream filter
+Input #0, concat, from 'out/2026-04-23_15-00-02/video/concat.txt':
+  Duration: N/A, start: 0.000000, bitrate: 114 kb/s
+    Stream #0:0(und): Video: h264 (High) (avc1 / 0x31637661), yuv420p, 576x1024, 114 kb/s, 25 fps, 25 tbr, 12800 tbn, 50 tbc
+    Metadata:
+      handler_name    : VideoHandler
+Input #1, mp3, from 'out/2026-04-23_15-00-02/audio/narration.mp3':
+  Metadata:
+    encoder         : Lavf58.29.100
+  Duration: 00:00:46.58, start: 0.025057, bitrate: 128 kb/s
+    Stream #1:0: Audio: mp3, 44100 Hz, mono, fltp, 128 kb/s
+Stream mapping:
+  Stream #0:0 -> #0:0 (h264 (native) -> h264 (libx264))
+  Stream #1:0 -> #0:1 (mp3 (mp3float) -> aac (native))
+Press [q] to stop, [?] for help
+[Parsed_subtitles_0 @ 0x55bb6c34f2c0] Shaper: FriBidi 0.19.7 (SIMPLE) HarfBuzz-ng 2.6.4 (COMPLEX)
+[Parsed_subtitles_0 @ 0x55bb6c34f2c0] Using font provider fontconfig
+[Parsed_subtitles_0 @ 0x55bb6c34f2c0] fontselect: (Arial, 400, 0) -> /usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf, 0, LiberationSans
+[libx264 @ 0x55bb6bd12ac0] using cpu capabilities: MMX2 SSE2Fast SSSE3 SSE4.2 AVX FMA3 BMI2 AVX2
+[libx264 @ 0x55bb6bd12ac0] profile High, level 3.1
+[libx264 @ 0x55bb6bd12ac0] 264 - core 155 r2917 0a84d98 - H.264/MPEG-4 AVC codec - Copyleft 2003-2018 - http://www.videolan.org/x264.html - options: cabac=1 ref=2 deblock=1:0:0 analyse=0x3:0x113 me=hex subme=6 psy=1 psy_rd=1.00:0.00 mixed_ref=1 me_range=16 chroma_me=1 trellis=1 8x8dct=1 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=-2 threads=30 lookahead_threads=5 sliced_threads=0 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=3 b_pyramid=2 b_adapt=1 b_bias=0 direct=1 weightb=1 open_gop=0 weightp=1 keyint=250 keyint_min=25 scenecut=40 intra_refresh=0 rc_lookahead=30 rc=crf mbtree=1 crf=23.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 ip_ratio=1.40 aq=1:1.00
+Output #0, mp4, to 'out/2026-04-23_15-00-02/video/story_video.mp4':
+  Metadata:
+    encoder         : Lavf58.29.100
+    Stream #0:0(und): Video: h264 (libx264) (avc1 / 0x31637661), yuv420p(progressive), 576x1024, q=-1--1, 25 fps, 12800 tbn, 25 tbc
+    Metadata:
+      handler_name    : VideoHandler
+      encoder         : Lavc58.54.100 libx264
+    Side data:
+      cpb: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: -1
+    Stream #0:1: Audio: aac (LC) (mp4a / 0x6134706D), 44100 Hz, mono, fltp, 128 kb/s
+    Metadata:
+      encoder         : Lavc58.54.100 aac
+[mov,mp4,m4a,3gp,3g2,mj2 @ 0x7f39dc01ae40] Auto-inserting h264_mp4toannexb bitstream filter
+[mov,mp4,m4a,3gp,3g2,mj2 @ 0x7f39dc003600] Auto-inserting h264_mp4toannexb bitstream filter
+[mov,mp4,m4a,3gp,3g2,mj2 @ 0x7f39dc000b80] Auto-inserting h264_mp4toannexb bitstream filter
+[mov,mp4,m4a,3gp,3g2,mj2 @ 0x7f39dc022f00] Auto-inserting h264_mp4toannexb bitstream filter
+[mov,mp4,m4a,3gp,3g2,mj2 @ 0x7f39dc00b100] Auto-inserting h264_mp4toannexb bitstream filter
+frame=  447 fps=0.0 q=28.0 size=     512kB time=00:00:15.23 bitrate= 275.4kbits/s speed=30.4x    [mov,mp4,m4a,3gp,3g2,mj2 @ 0x7f39dc00b100] Auto-inserting h264_mp4toannexb bitstream filter
+    Last message repeated 4 times
+frame=  939 fps=938 q=28.0 size=    1280kB time=00:00:34.92 bitrate= 300.3kbits/s speed=34.9x    frame= 1170 fps=914 q=-1.0 Lsize=    1649kB time=00:00:46.68 bitrate= 289.4kbits/s speed=36.5x    
+video:883kB audio:727kB subtitle:0kB other streams:0kB global headers:0kB muxing overhead: 2.452872%
+[libx264 @ 0x55bb6bd12ac0] frame I:10    Avg QP:11.62  size: 24948
+[libx264 @ 0x55bb6bd12ac0] frame P:320   Avg QP:16.07  size:  1753
+[libx264 @ 0x55bb6bd12ac0] frame B:840   Avg QP:16.62  size:   111
+[libx264 @ 0x55bb6bd12ac0] consecutive B-frames:  2.8%  4.1%  0.8% 92.3%
+[libx264 @ 0x55bb6bd12ac0] mb I  I16..4: 51.3% 24.9% 23.7%
+[libx264 @ 0x55bb6bd12ac0] mb P  I16..4:  2.2%  2.4%  0.7%  P16..4:  3.0%  0.4%  0.5%  0.0%  0.0%    skip:90.7%
+[libx264 @ 0x55bb6bd12ac0] mb B  I16..4:  1.1%  0.1%  0.0%  B16..8:  0.1%  0.0%  0.0%  direct: 0.4%  skip:98.3%  L0:44.6% L1:52.7% BI: 2.7%
+[libx264 @ 0x55bb6bd12ac0] 8x8 transform intra:30.4% inter:57.7%
+[libx264 @ 0x55bb6bd12ac0] coded y,uvDC,uvAC intra: 13.9% 17.3% 11.8% inter: 0.7% 0.7% 0.2%
+[libx264 @ 0x55bb6bd12ac0] i16 v,h,dc,p: 84% 10%  4%  1%
+[libx264 @ 0x55bb6bd12ac0] i8 v,h,dc,ddl,ddr,vr,hd,vl,hu: 42% 15% 34%  2%  1%  2%  1%  2%  1%
+[libx264 @ 0x55bb6bd12ac0] i4 v,h,dc,ddl,ddr,vr,hd,vl,hu: 35% 16% 16%  6%  5%  7%  5%  6%  4%
+[libx264 @ 0x55bb6bd12ac0] i8c dc,h,v,p: 82%  8%  8%  1%
+[libx264 @ 0x55bb6bd12ac0] Weighted P-Frames: Y:17.2% UV:16.2%
+[libx264 @ 0x55bb6bd12ac0] ref P L0: 90.3%  9.7%
+[libx264 @ 0x55bb6bd12ac0] ref B L0: 84.1% 15.9%
+[libx264 @ 0x55bb6bd12ac0] ref B L1: 97.9%  2.1%
+[libx264 @ 0x55bb6bd12ac0] kb/s:154.43
+[aac @ 0x55bb6bd14040] Qavg: 9329.729
+ffmpeg version 4.2.7-0ubuntu0.1 Copyright (c) 2000-2022 the FFmpeg developers
+  built with gcc 9 (Ubuntu 9.4.0-1ubuntu1~20.04.1)
+  configuration: --prefix=/usr --extra-version=0ubuntu0.1 --toolchain=hardened --libdir=/usr/lib/x86_64-linux-gnu --incdir=/usr/include/x86_64-linux-gnu --arch=amd64 --enable-gpl --disable-stripping --enable-avresample --disable-filter=resample --enable-avisynth --enable-gnutls --enable-ladspa --enable-libaom --enable-libass --enable-libbluray --enable-libbs2b --enable-libcaca --enable-libcdio --enable-libcodec2 --enable-libflite --enable-libfontconfig --enable-libfreetype --enable-libfribidi --enable-libgme --enable-libgsm --enable-libjack --enable-libmp3lame --enable-libmysofa --enable-libopenjpeg --enable-libopenmpt --enable-libopus --enable-libpulse --enable-librsvg --enable-librubberband --enable-libshine --enable-libsnappy --enable-libsoxr --enable-libspeex --enable-libssh --enable-libtheora --enable-libtwolame --enable-libvidstab --enable-libvorbis --enable-libvpx --enable-libwavpack --enable-libwebp --enable-libx265 --enable-libxml2 --enable-libxvid --enable-libzmq --enable-libzvbi --enable-lv2 --enable-omx --enable-openal --enable-opencl --enable-opengl --enable-sdl2 --enable-libdc1394 --enable-libdrm --enable-libiec61883 --enable-nvenc --enable-chromaprint --enable-frei0r --enable-libx264 --enable-shared
+  libavutil      56. 31.100 / 56. 31.100
+  libavcodec     58. 54.100 / 58. 54.100
+  libavformat    58. 29.100 / 58. 29.100
+  libavdevice    58.  8.100 / 58.  8.100
+  libavfilter     7. 57.100 /  7. 57.100
+  libavresample   4.  0.  0 /  4.  0.  0
+  libswscale      5.  5.100 /  5.  5.100
+  libswresample   3.  5.100 /  3.  5.100
+  libpostproc    55.  5.100 / 55.  5.100
+Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'out/2026-04-23_15-00-02/video/story_video.mp4':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2avc1mp41
+    encoder         : Lavf58.29.100
+  Duration: 00:00:46.80, start: 0.000000, bitrate: 288 kb/s
+    Stream #0:0(und): Video: h264 (High) (avc1 / 0x31637661), yuv420p, 576x1024, 154 kb/s, 25 fps, 25 tbr, 12800 tbn, 50 tbc (default)
+    Metadata:
+      handler_name    : VideoHandler
+    Stream #0:1(und): Audio: aac (LC) (mp4a / 0x6134706D), 44100 Hz, mono, fltp, 127 kb/s (default)
+    Metadata:
+      handler_name    : SoundHandler
+Stream mapping:
+  Stream #0:0 -> #0:0 (h264 (native) -> mjpeg (native))
+Press [q] to stop, [?] for help
+[swscaler @ 0x558934298e80] deprecated pixel format used, make sure you did set range correctly
+Output #0, image2, to 'out/2026-04-23_15-00-02/video/thumb.jpg':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2avc1mp41
+    encoder         : Lavf58.29.100
+    Stream #0:0(und): Video: mjpeg, yuvj420p(pc), 576x1024, q=2-31, 200 kb/s, 25 fps, 25 tbn, 25 tbc (default)
+    Metadata:
+      handler_name    : VideoHandler
+      encoder         : Lavc58.54.100 mjpeg
+    Side data:
+      cpb: bitrate max/min/avg: 0/0/200000 buffer size: 0 vbv_delay: -1
+frame=    1 fps=0.0 q=2.0 Lsize=N/A time=00:00:00.04 bitrate=N/A speed=1.65x    
+video:94kB audio:0kB subtitle:0kB other streams:0kB global headers:0kB muxing overhead: unknown
+Voice: TYKLc7ViOIGE13dSZYlK
+Resuming reviewed run: out/2026-04-23_15-00-02
+  TTS: hook...
+  TTS: scene_01...
+  TTS: scene_02...
+  TTS: scene_03...
+  TTS: scene_04...
+  TTS: scene_05...
+  TTS: scene_06...
+  TTS: scene_07...
+  TTS: scene_08...
+  TTS: scene_09...
+  TTS: scene_10...
+  TTS: outro...
+  Saved: out/2026-04-23_15-00-02/audio/narration.mp3
+  Saved: out/2026-04-23_15-00-02/audio/scenes/ (hook + outro + 10 scene clips)
+  Rendering clip hook/11...
+  Rendering clip 1/11...
+  Rendering clip 2/11...
+  Rendering clip 3/11...
+  Rendering clip 4/11...
+  Rendering clip 5/11...
+  Rendering clip 6/11...
+  Rendering clip 7/11...
+  Rendering clip 8/11...
+  Rendering clip 9/11...
+  Rendering clip 10/11...
+Assembling final video with audio + subtitles...
+  Saved: out/2026-04-23_15-00-02/video/story_video.mp4
+✓ Using clips/ as audio source
+✓ 11 images copied
+✓ hook.mp3 + outro.mp3 + 10 scene clips copied
+
+✅ Imported: "Benny Bunny’s Big Ask" → ID: 0b7012be
+   Open http://localhost:5000 to view it.
+
+Generation summary:
+{
+  "workdir": "out/2026-04-23_15-00-02",
+  "story_id": "0b7012be",
+  "title": "Benny Bunny\u2019s Big Ask",
+  "scene_count": 10,
+  "video_path": "out/2026-04-23_15-00-02/video/story_video.mp4",
+  "previous_status": "images_ready"
+}
+
+Uploading to Render review queue: https://readkindly.onrender.com ...
+  Run ID : 2026-04-23_15-00-02
+  Images : 15  Audio: 12  Video: yes
+✅ Story in review queue: "Benny Bunny’s Big Ask"
+   Review at: https://readkindly.onrender.com → Admin → Review Queue

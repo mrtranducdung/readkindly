@@ -187,6 +187,13 @@ def _scan_pending_runs() -> list:
                 {"index": s["index"], "title": s.get("title", ""), "on_screen_text": s.get("on_screen_text", "")}
                 for s in cfg.get("scenes", [])
             ]
+            regen_queue = []
+            rq_path = d / "regen_queue.json"
+            if rq_path.exists():
+                try:
+                    regen_queue = json.loads(rq_path.read_text())
+                except Exception:
+                    pass
             runs.append({
                 "run_id": d.name,
                 "title": state.get("title") or cfg.get("title", "Untitled"),
@@ -195,6 +202,7 @@ def _scan_pending_runs() -> list:
                 "scene_count": state.get("scene_count", 10),
                 "has_video": state.get("has_video", False),
                 "scenes_info": scenes_info,
+                "regen_queue": regen_queue,
             })
         except Exception:
             continue
@@ -505,7 +513,7 @@ def serve_review_video(run_id):
     video_path = _PENDING_DIR / run_id / "video" / "story_video.mp4"
     if not video_path.exists():
         return jsonify({"error": "Not found"}), 404
-    return send_file(video_path, mimetype="video/mp4")
+    return send_file(video_path, mimetype="video/mp4", conditional=True)
 
 
 @app.route("/api/admin/review/<run_id>/approve", methods=["POST"])
@@ -612,13 +620,21 @@ def create_regen_request(run_id):
     scene = str(data.get("scene", "")).strip().lower()
     if not scene or (scene not in ("hook", "outro") and not scene.isdigit()):
         return jsonify({"error": "scene required: 'hook', 'outro', or a scene number"}), 400
+    rq_path = pending_dir / "regen_queue.json"
+    queue = []
+    if rq_path.exists():
+        try:
+            queue = json.loads(rq_path.read_text())
+        except Exception:
+            pass
     regen = {
         "scene": scene,
         "guidance": str(data.get("guidance", "")).strip(),
         "created_at": datetime.now().isoformat(),
     }
-    (pending_dir / "regen_request.json").write_text(json.dumps(regen, indent=2))
-    return jsonify({"ok": True, "run_id": run_id, "scene": regen["scene"]})
+    queue.append(regen)
+    rq_path.write_text(json.dumps(queue, indent=2))
+    return jsonify({"ok": True, "run_id": run_id, "scene": regen["scene"], "queue_length": len(queue)})
 
 
 @app.route("/api/admin/review/<run_id>/regen-request", methods=["DELETE"])
@@ -626,9 +642,18 @@ def create_regen_request(run_id):
 def clear_regen_request(run_id):
     if not _RUN_ID_RE.match(run_id):
         return jsonify({"error": "Invalid run_id"}), 400
-    regen_path = _PENDING_DIR / run_id / "regen_request.json"
-    if regen_path.exists():
-        regen_path.unlink()
+    rq_path = _PENDING_DIR / run_id / "regen_queue.json"
+    if rq_path.exists():
+        try:
+            queue = json.loads(rq_path.read_text())
+            if queue:
+                queue.pop(0)
+            if queue:
+                rq_path.write_text(json.dumps(queue, indent=2))
+            else:
+                rq_path.unlink()
+        except Exception:
+            rq_path.unlink(missing_ok=True)
     return jsonify({"ok": True})
 
 
@@ -639,18 +664,21 @@ def list_regen_requests():
     for d in sorted(_PENDING_DIR.iterdir(), reverse=True):
         if not d.is_dir() or not _RUN_ID_RE.match(d.name):
             continue
-        regen_path = d / "regen_request.json"
-        if not regen_path.exists():
+        rq_path = d / "regen_queue.json"
+        if not rq_path.exists():
             continue
         try:
-            regen = json.loads(regen_path.read_text())
+            queue = json.loads(rq_path.read_text())
+            if not queue:
+                continue
+            req = queue[0]  # watcher always processes the head of the queue
             state = json.loads((d / "review_state.json").read_text())
             results.append({
                 "run_id": d.name,
                 "title": state.get("title", "Untitled"),
-                "scene": regen["scene"],
-                "guidance": regen.get("guidance", ""),
-                "created_at": regen["created_at"],
+                "scene": req["scene"],
+                "guidance": req.get("guidance", ""),
+                "created_at": req["created_at"],
             })
         except Exception:
             continue

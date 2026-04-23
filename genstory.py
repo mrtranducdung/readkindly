@@ -164,7 +164,7 @@ class StoryAgent(Agent):
 
 
 # Appended to every scene prompt so FLUX leaves a calm strip at the bottom for subtitles.
-_SUBTITLE_SAFE = "calm empty bottom strip, no characters"
+_SUBTITLE_SAFE = "plain solid color bottom margin, no text, no words, no letters"
 
 
 class PromptConsistencyAgent(Agent):
@@ -605,8 +605,8 @@ class VideoAgent(Agent):
             "-i", narration.audio_path,
             "-vf", (
                 f"subtitles={srt_abs}:force_style="
-                f"'FontName=Arial,FontSize=13,PrimaryColour=&H00FFFFFF,"
-                f"OutlineColour=&H00000000,Outline=2,Alignment=2,MarginV=40'"
+                f"'FontName=Arial,FontSize=9,PrimaryColour=&H00FFFFFF,"
+                f"OutlineColour=&H00000000,Outline=2,Alignment=2,MarginV=10'"
             ),
             "-c:v", "libx264", "-crf", "23", "-preset", "fast", "-pix_fmt", "yuv420p",
             "-c:a", "aac", "-b:a", "128k",

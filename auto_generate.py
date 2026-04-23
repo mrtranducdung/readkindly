@@ -88,6 +88,13 @@ def main() -> int:
         [PYTHON, str(BASE / "generate_new.py"), "--theme", theme],
         env=env,
     )
+    if result.returncode != 0:
+        return result.returncode
+
+    result = subprocess.run(
+        [PYTHON, str(BASE / "continue_generate.py")],
+        env=env,
+    )
     return result.returncode
 
 
