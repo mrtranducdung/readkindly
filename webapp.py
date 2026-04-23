@@ -9,6 +9,7 @@ import json
 import os
 import re
 import shutil
+import time
 import uuid
 from datetime import datetime, timedelta
 from functools import wraps
@@ -18,7 +19,7 @@ import stripe
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from dotenv import load_dotenv
-from flask import Flask, jsonify, redirect, render_template, request, send_file, session
+from flask import Flask, jsonify, make_response, redirect, render_template, request, send_file, session
 
 load_dotenv()
 
@@ -159,6 +160,11 @@ def db_reorder(order):
 
 init_db()
 
+_stories_cache: dict = {"data": None, "at": 0.0}
+
+def _invalidate_stories_cache():
+    _stories_cache["at"] = 0.0
+
 
 # ── Review-queue helpers ──────────────────────────────────────────────────────
 
@@ -250,12 +256,16 @@ def serve_asset(story_id, folder, candidates, mimetype):
         for name in candidates:
             url = file_url(story_id, folder, name)
             if url:
-                return redirect(url)
+                resp = make_response(redirect(url))
+                resp.headers["Cache-Control"] = "public, max-age=3600"
+                return resp
         return jsonify({"error": "Not found"}), 404
     for name in candidates:
         p = STORAGE / story_id / folder / name
         if p.exists():
-            return send_file(p, mimetype=mimetype, conditional=(mimetype == "audio/mpeg"))
+            resp = make_response(send_file(p, mimetype=mimetype, conditional=True))
+            resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+            return resp
     return jsonify({"error": "Not found"}), 404
 
 
@@ -322,7 +332,11 @@ def story_asset_urls(story_id):
 
 @app.route("/api/stories")
 def list_stories():
-    return jsonify(db_list())
+    now = time.time()
+    if now - _stories_cache["at"] > 10:
+        _stories_cache["data"] = db_list()
+        _stories_cache["at"] = now
+    return jsonify(_stories_cache["data"])
 
 
 @app.route("/api/stories/<story_id>")
@@ -413,6 +427,7 @@ def upload_story():
 
     meta = {**config, "id": story_id, "created_at": created_at}
     db_insert(story_id, meta, created_at)
+    _invalidate_stories_cache()
 
     return jsonify({"id": story_id, "title": config.get("title"), "audio_scenes": saved_audio})
 
@@ -422,6 +437,7 @@ def upload_story():
 def delete_story(story_id):
     delete_story_files(story_id)
     db_delete(story_id)
+    _invalidate_stories_cache()
     return jsonify({"ok": True})
 
 
@@ -429,6 +445,7 @@ def delete_story(story_id):
 @admin_required
 def reorder_stories():
     db_reorder(request.get_json().get("order", []))
+    _invalidate_stories_cache()
     return jsonify({"ok": True})
 
 
@@ -558,6 +575,7 @@ def approve_run(run_id):
 
     meta = {**config, "id": story_id, "created_at": created_at}
     db_insert(story_id, meta, created_at)
+    _invalidate_stories_cache()
 
     # Queue social media upload for the local watcher to handle
     social = {
