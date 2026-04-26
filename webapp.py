@@ -222,7 +222,7 @@ def store_file(story_id, folder, filename, data: bytes, content_type: str):
         path = f"{story_id}/{folder}/{filename}"
         _sb.storage.from_(_BUCKET).upload(
             path, data,
-            file_options={"content-type": content_type, "upsert": "true"},
+            file_options={"content-type": content_type, "upsert": "true", "cache-control": "public, max-age=31536000"},
         )
     else:
         dest = STORAGE / story_id / folder
