@@ -83,10 +83,20 @@ def init_db():
                 scene_count   INTEGER DEFAULT 10,
                 created_at    TEXT,
                 display_order INTEGER DEFAULT 0,
-                config        TEXT
+                config        TEXT,
+                storage_bytes INTEGER DEFAULT 0
             )
         """)
+        try:
+            conn.execute("ALTER TABLE stories ADD COLUMN storage_bytes INTEGER DEFAULT 0")
+        except Exception:
+            pass
         conn.commit()
+
+
+def db_storage_used() -> int:
+    with _local_db() as conn:
+        return conn.execute("SELECT COALESCE(SUM(storage_bytes),0) FROM stories").fetchone()[0]
 
 
 def db_list():
@@ -105,7 +115,7 @@ def db_get_config(story_id):
         return json.loads(row[0])
 
 
-def db_insert(story_id, config, created_at):
+def db_insert(story_id, config, created_at, storage_bytes=0):
     row = {
         "id":            story_id,
         "title":         config.get("title", "Untitled"),
@@ -117,12 +127,13 @@ def db_insert(story_id, config, created_at):
         "created_at":    created_at,
         "display_order": db_max_order() + 1,
         "config":        json.dumps(config),
+        "storage_bytes": storage_bytes,
     }
     with _local_db() as conn:
         conn.execute(
             "INSERT INTO stories "
-            "(id,title,moral,hook,outro,hashtags,scene_count,created_at,display_order,config) "
-            "VALUES (:id,:title,:moral,:hook,:outro,:hashtags,:scene_count,:created_at,:display_order,:config)",
+            "(id,title,moral,hook,outro,hashtags,scene_count,created_at,display_order,config,storage_bytes) "
+            "VALUES (:id,:title,:moral,:hook,:outro,:hashtags,:scene_count,:created_at,:display_order,:config,:storage_bytes)",
             row,
         )
         conn.commit()
@@ -537,6 +548,21 @@ def approve_run(run_id):
     story_id = str(uuid.uuid4())[:8]
     created_at = datetime.now().isoformat()
 
+    # Calculate pending story size and check quota before uploading anything
+    pending_bytes = sum(
+        f.stat().st_size
+        for folder in ("images", "audio")
+        for f in (pending_dir / folder).glob("*")
+        if f.is_file()
+    )
+    used_bytes = db_storage_used()
+    if used_bytes + pending_bytes > STORAGE_LIMIT_BYTES:
+        used_gb = used_bytes / 1024 ** 3
+        limit_gb = STORAGE_LIMIT_BYTES / 1024 ** 3
+        return jsonify({
+            "error": f"Storage limit reached ({used_gb:.2f} GB used of {limit_gb:.1f} GB). Delete old stories first."
+        }), 507
+
     images_dir = pending_dir / "images"
     for img in sorted(images_dir.glob("*")):
         ext = img.suffix.lstrip(".")
@@ -565,7 +591,7 @@ def approve_run(run_id):
         return jsonify({"error": "No audio scene files found in pending run"}), 400
 
     meta = {**config, "id": story_id, "created_at": created_at}
-    db_insert(story_id, meta, created_at)
+    db_insert(story_id, meta, created_at, storage_bytes=pending_bytes)
     _invalidate_stories_cache()
 
     # Queue social media upload for the local watcher to handle
