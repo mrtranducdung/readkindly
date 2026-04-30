@@ -2,8 +2,8 @@
 Lumi Story Player — Flask backend
 
 Storage backends (auto-detected):
-  Supabase  — set SUPABASE_URL + SUPABASE_KEY  (production on Render free tier)
-  Local     — default, uses story_storage/ + stories.db  (local dev)
+  R2    — set R2_ENDPOINT_URL + R2_ACCESS_KEY_ID + R2_SECRET_ACCESS_KEY + R2_BUCKET + R2_PUBLIC_URL
+  Local — default, uses story_storage/ + stories.db  (local dev)
 """
 import json
 import os
@@ -32,22 +32,34 @@ stripe.api_key          = os.environ.get("STRIPE_SECRET_KEY", "")
 STRIPE_WEBHOOK_SECRET   = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
 STRIPE_PRICE_ID         = os.environ.get("STRIPE_PRICE_ID", "")
 
-SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
-USE_SUPABASE = bool(SUPABASE_URL and SUPABASE_KEY)
+import sqlite3
 
-if USE_SUPABASE:
-    from supabase import create_client
-    _sb     = create_client(SUPABASE_URL, SUPABASE_KEY)
-    _BUCKET = "stories"
-    print("Storage: Supabase")
+_data_dir = Path(os.environ.get("DATA_DIR", "."))
+STORAGE   = _data_dir / "story_storage"
+STORAGE.mkdir(parents=True, exist_ok=True)
+DB_PATH   = str(_data_dir / "stories.db")
+
+R2_ENDPOINT_URL  = os.environ.get("R2_ENDPOINT_URL", "")
+R2_ACCESS_KEY_ID = os.environ.get("R2_ACCESS_KEY_ID", "")
+R2_SECRET_KEY    = os.environ.get("R2_SECRET_ACCESS_KEY", "")
+R2_BUCKET        = os.environ.get("R2_BUCKET", "stories")
+R2_PUBLIC_URL    = os.environ.get("R2_PUBLIC_URL", "").rstrip("/")
+USE_R2 = bool(R2_ENDPOINT_URL and R2_ACCESS_KEY_ID and R2_SECRET_KEY)
+
+STORAGE_LIMIT_BYTES = int(float(os.environ.get("STORAGE_LIMIT_GB", "9.5")) * 1024 ** 3)
+
+if USE_R2:
+    import boto3
+    _r2 = boto3.client(
+        "s3",
+        endpoint_url=R2_ENDPOINT_URL,
+        aws_access_key_id=R2_ACCESS_KEY_ID,
+        aws_secret_access_key=R2_SECRET_KEY,
+        region_name="auto",
+    )
+    print("Storage: Cloudflare R2")
 else:
-    import sqlite3
-    _data_dir = Path(os.environ.get("DATA_DIR", "."))
-    STORAGE   = _data_dir / "story_storage"
-    STORAGE.mkdir(parents=True, exist_ok=True)
-    DB_PATH   = str(_data_dir / "stories.db")
-    print(f"Storage: local")
+    print("Storage: local")
 
 
 # ── DB helpers ────────────────────────────────────────────────────────────────
@@ -59,8 +71,6 @@ def _local_db():
 
 
 def init_db():
-    if USE_SUPABASE:
-        return  # table is created once in the Supabase dashboard (see README)
     with _local_db() as conn:
         conn.execute("""
             CREATE TABLE IF NOT EXISTS stories (
@@ -80,9 +90,6 @@ def init_db():
 
 
 def db_list():
-    if USE_SUPABASE:
-        res = _sb.table("stories").select("*").order("display_order").execute()
-        return res.data or []
     with _local_db() as conn:
         rows = conn.execute(
             "SELECT * FROM stories ORDER BY display_order ASC, created_at DESC"
@@ -91,12 +98,6 @@ def db_list():
 
 
 def db_get_config(story_id):
-    if USE_SUPABASE:
-        res = _sb.table("stories").select("config").eq("id", story_id).maybe_single().execute()
-        if not res.data:
-            return None
-        cfg = res.data["config"]
-        return cfg if isinstance(cfg, dict) else json.loads(cfg)
     with _local_db() as conn:
         row = conn.execute("SELECT config FROM stories WHERE id = ?", (story_id,)).fetchone()
         if not row or not row[0]:
@@ -115,47 +116,34 @@ def db_insert(story_id, config, created_at):
         "scene_count":   len(config.get("scenes", [])),
         "created_at":    created_at,
         "display_order": db_max_order() + 1,
-        "config":        config if USE_SUPABASE else json.dumps(config),
+        "config":        json.dumps(config),
     }
-    if USE_SUPABASE:
-        _sb.table("stories").insert(row).execute()
-    else:
-        with _local_db() as conn:
-            conn.execute(
-                "INSERT INTO stories "
-                "(id,title,moral,hook,outro,hashtags,scene_count,created_at,display_order,config) "
-                "VALUES (:id,:title,:moral,:hook,:outro,:hashtags,:scene_count,:created_at,:display_order,:config)",
-                row,
-            )
-            conn.commit()
+    with _local_db() as conn:
+        conn.execute(
+            "INSERT INTO stories "
+            "(id,title,moral,hook,outro,hashtags,scene_count,created_at,display_order,config) "
+            "VALUES (:id,:title,:moral,:hook,:outro,:hashtags,:scene_count,:created_at,:display_order,:config)",
+            row,
+        )
+        conn.commit()
 
 
 def db_max_order():
-    if USE_SUPABASE:
-        res = _sb.table("stories").select("display_order").order("display_order", desc=True).limit(1).execute()
-        return res.data[0]["display_order"] if res.data else -1
     with _local_db() as conn:
         return conn.execute("SELECT COALESCE(MAX(display_order),-1) FROM stories").fetchone()[0]
 
 
 def db_delete(story_id):
-    if USE_SUPABASE:
-        _sb.table("stories").delete().eq("id", story_id).execute()
-    else:
-        with _local_db() as conn:
-            conn.execute("DELETE FROM stories WHERE id = ?", (story_id,))
-            conn.commit()
+    with _local_db() as conn:
+        conn.execute("DELETE FROM stories WHERE id = ?", (story_id,))
+        conn.commit()
 
 
 def db_reorder(order):
-    if USE_SUPABASE:
+    with _local_db() as conn:
         for i, sid in enumerate(order):
-            _sb.table("stories").update({"display_order": i}).eq("id", sid).execute()
-    else:
-        with _local_db() as conn:
-            for i, sid in enumerate(order):
-                conn.execute("UPDATE stories SET display_order = ? WHERE id = ?", (i, sid))
-            conn.commit()
+            conn.execute("UPDATE stories SET display_order = ? WHERE id = ?", (i, sid))
+        conn.commit()
 
 
 init_db()
@@ -168,9 +156,9 @@ def _invalidate_stories_cache():
 
 # ── Review-queue helpers ──────────────────────────────────────────────────────
 
-_PENDING_DIR = Path(__file__).parent.resolve() / "pending_review"
+_PENDING_DIR = _data_dir / "pending_review"
 _PENDING_DIR.mkdir(exist_ok=True)
-_SOCIAL_QUEUE_DIR = Path(__file__).parent.resolve() / "social_queue"
+_SOCIAL_QUEUE_DIR = _data_dir / "social_queue"
 _SOCIAL_QUEUE_DIR.mkdir(exist_ok=True)
 _RUN_ID_RE = re.compile(r"^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}$")
 
@@ -218,11 +206,13 @@ def _scan_pending_runs() -> list:
 # ── Storage helpers ───────────────────────────────────────────────────────────
 
 def store_file(story_id, folder, filename, data: bytes, content_type: str):
-    if USE_SUPABASE:
-        path = f"{story_id}/{folder}/{filename}"
-        _sb.storage.from_(_BUCKET).upload(
-            path, data,
-            file_options={"content-type": content_type, "upsert": "true", "cache-control": "public, max-age=31536000"},
+    if USE_R2:
+        _r2.put_object(
+            Bucket=R2_BUCKET,
+            Key=f"{story_id}/{folder}/{filename}",
+            Body=data,
+            ContentType=content_type,
+            CacheControl="public, max-age=31536000",
         )
     else:
         dest = STORAGE / story_id / folder
@@ -231,19 +221,20 @@ def store_file(story_id, folder, filename, data: bytes, content_type: str):
 
 
 def file_url(story_id, folder, filename):
-    """Return public Supabase URL, or None if using local storage."""
-    if USE_SUPABASE:
-        return _sb.storage.from_(_BUCKET).get_public_url(f"{story_id}/{folder}/{filename}")
+    """Return public R2 URL, or None if using local storage."""
+    if USE_R2 and R2_PUBLIC_URL:
+        return f"{R2_PUBLIC_URL}/{story_id}/{folder}/{filename}"
     return None
 
 
 def delete_story_files(story_id):
-    if USE_SUPABASE:
+    if USE_R2:
         for folder in ("images", "audio"):
-            items = _sb.storage.from_(_BUCKET).list(f"{story_id}/{folder}") or []
-            paths = [f"{story_id}/{folder}/{f['name']}" for f in items]
-            if paths:
-                _sb.storage.from_(_BUCKET).remove(paths)
+            prefix = f"{story_id}/{folder}/"
+            res = _r2.list_objects_v2(Bucket=R2_BUCKET, Prefix=prefix)
+            keys = [{"Key": o["Key"]} for o in res.get("Contents", [])]
+            if keys:
+                _r2.delete_objects(Bucket=R2_BUCKET, Delete={"Objects": keys})
     else:
         d = STORAGE / story_id
         if d.exists():
@@ -251,13 +242,13 @@ def delete_story_files(story_id):
 
 
 def serve_asset(story_id, folder, candidates, mimetype):
-    """Redirect to Supabase URL, or send local file, for the first matching candidate."""
-    if USE_SUPABASE:
+    """Redirect to R2 URL, or send local file, for the first matching candidate."""
+    if USE_R2:
         for name in candidates:
             url = file_url(story_id, folder, name)
             if url:
                 resp = make_response(redirect(url))
-                resp.headers["Cache-Control"] = "public, max-age=3600"
+                resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
                 return resp
         return jsonify({"error": "Not found"}), 404
     for name in candidates:
@@ -311,13 +302,13 @@ def story_asset_urls(story_id):
     n = len(config.get("scenes", []))
 
     def img_url(name):
-        if USE_SUPABASE:
-            return file_url(story_id, "images", name)
-        return f"/api/stories/{story_id}/image/{name.split('.')[0]}"
+        url = file_url(story_id, "images", name)
+        return url if url else f"/api/stories/{story_id}/image/{name.split('.')[0]}"
 
     def aud_url(name):
-        if USE_SUPABASE:
-            return file_url(story_id, "audio", name)
+        url = file_url(story_id, "audio", name)
+        if url:
+            return url
         key = name.replace(".mp3", "").replace("scene_", "")
         return f"/api/stories/{story_id}/audio/{key}"
 
@@ -706,8 +697,6 @@ def list_regen_requests():
 # ── Users DB ──────────────────────────────────────────────────────────────────
 
 def _init_users_db():
-    if USE_SUPABASE:
-        return  # create table once in Supabase dashboard
     with _local_db() as conn:
         conn.execute("""
             CREATE TABLE IF NOT EXISTS users (
@@ -726,27 +715,18 @@ _init_users_db()
 
 
 def _user_by_email(email):
-    if USE_SUPABASE:
-        r = _sb.table("users").select("*").eq("email", email).maybe_single().execute()
-        return r.data
     with _local_db() as conn:
         row = conn.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
         return dict(row) if row else None
 
 
 def _user_by_id(uid):
-    if USE_SUPABASE:
-        r = _sb.table("users").select("*").eq("id", uid).maybe_single().execute()
-        return r.data
     with _local_db() as conn:
         row = conn.execute("SELECT * FROM users WHERE id=?", (uid,)).fetchone()
         return dict(row) if row else None
 
 
 def _user_by_customer(customer_id):
-    if USE_SUPABASE:
-        r = _sb.table("users").select("*").eq("stripe_customer_id", customer_id).maybe_single().execute()
-        return r.data
     with _local_db() as conn:
         row = conn.execute("SELECT * FROM users WHERE stripe_customer_id=?", (customer_id,)).fetchone()
         return dict(row) if row else None
@@ -758,35 +738,26 @@ def _user_create(email, password):
            "password_hash": generate_password_hash(password),
            "created_at": datetime.now().isoformat(),
            "stripe_customer_id": None, "stripe_subscription_id": None, "is_premium": 0}
-    if USE_SUPABASE:
-        _sb.table("users").insert(row).execute()
-    else:
-        with _local_db() as conn:
-            conn.execute(
-                "INSERT INTO users (id,email,password_hash,created_at,stripe_customer_id,stripe_subscription_id,is_premium) "
-                "VALUES (:id,:email,:password_hash,:created_at,:stripe_customer_id,:stripe_subscription_id,:is_premium)", row)
-            conn.commit()
+    with _local_db() as conn:
+        conn.execute(
+            "INSERT INTO users (id,email,password_hash,created_at,stripe_customer_id,stripe_subscription_id,is_premium) "
+            "VALUES (:id,:email,:password_hash,:created_at,:stripe_customer_id,:stripe_subscription_id,:is_premium)", row)
+        conn.commit()
     return row
 
 
 def _user_patch(uid, **fields):
-    if USE_SUPABASE:
-        _sb.table("users").update(fields).eq("id", uid).execute()
-    else:
-        set_clause = ", ".join(f"{k}=?" for k in fields)
-        with _local_db() as conn:
-            conn.execute(f"UPDATE users SET {set_clause} WHERE id=?", [*fields.values(), uid])
-            conn.commit()
+    set_clause = ", ".join(f"{k}=?" for k in fields)
+    with _local_db() as conn:
+        conn.execute(f"UPDATE users SET {set_clause} WHERE id=?", [*fields.values(), uid])
+        conn.commit()
 
 
 def _user_patch_by_customer(customer_id, **fields):
-    if USE_SUPABASE:
-        _sb.table("users").update(fields).eq("stripe_customer_id", customer_id).execute()
-    else:
-        set_clause = ", ".join(f"{k}=?" for k in fields)
-        with _local_db() as conn:
-            conn.execute(f"UPDATE users SET {set_clause} WHERE stripe_customer_id=?", [*fields.values(), customer_id])
-            conn.commit()
+    set_clause = ", ".join(f"{k}=?" for k in fields)
+    with _local_db() as conn:
+        conn.execute(f"UPDATE users SET {set_clause} WHERE stripe_customer_id=?", [*fields.values(), customer_id])
+        conn.commit()
 
 
 # ── Auth routes ───────────────────────────────────────────────────────────────
@@ -1029,6 +1000,6 @@ def serve_spa(path=""):
 
 
 if __name__ == "__main__":
-    print(f"Lumi Story Player — http://localhost:5000  (Supabase: {USE_SUPABASE})")
+    print(f"Lumi Story Player — http://localhost:5000  (R2: {USE_R2})")
     print(f"Admin password: {ADMIN_PASSWORD}")
     app.run(debug=True, port=5000, host="0.0.0.0")
